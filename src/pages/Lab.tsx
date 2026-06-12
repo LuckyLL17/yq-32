@@ -1,8 +1,8 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useCallback } from 'react'
 import { useParams } from 'react-router-dom'
 import { Play, Pause, RotateCcw } from 'lucide-react'
 import { experiments } from '@/data/experiments'
-import type { ExperimentEngine } from '@/data/types'
+import type { ExperimentEngine, EngineData } from '@/data/types'
 import { useExperimentStore } from '@/stores/experimentStore'
 import ExperimentCanvas from '@/components/canvas/ExperimentCanvas'
 import ParamSlider from '@/components/controls/ParamSlider'
@@ -35,6 +35,7 @@ export default function Lab() {
     addChartData,
     clearChartData,
     resetParams,
+    resetAll,
   } = useExperimentStore()
 
   const engine = useMemo<ExperimentEngine | null>(() => {
@@ -61,47 +62,19 @@ export default function Lab() {
       defaultParams[p.key] = p.defaultValue
     })
     setParams(defaultParams)
+    setIsRunning(true)
     clearChartData()
-  }, [config, setCurrentExperiment, setParams, clearChartData])
+  }, [config, setCurrentExperiment, setParams, setIsRunning, clearChartData])
 
   useEffect(() => {
-    if (!isRunning || !config) return
-    let lastTime = performance.now()
-    let rafId: number
-    const tick = () => {
-      const now = performance.now()
-      const dt = (now - lastTime) / 1000
-      lastTime = now
-      const exp = config.experiment
-      let yValue = 0
-      if (exp.id === 'spring') {
-        const mass = params.mass ?? 1
-        const k = params.stiffness ?? 20
-        const damping = params.damping ?? 0.1
-        const amplitude = params.displacement ?? 1
-        const omega = Math.sqrt(k / mass)
-        yValue = amplitude * Math.exp(-damping * (useExperimentStore.getState().time)) * Math.cos(omega * (useExperimentStore.getState().time))
-        useExperimentStore.setState((s) => ({ time: s.time + dt }))
-      } else if (exp.id === 'projectile') {
-        yValue = ((useExperimentStore.getState().time))
-        useExperimentStore.setState((s) => ({ time: s.time + dt }))
-      } else if (exp.id === 'wave') {
-        yValue = Math.sin(2 * Math.PI * (params.frequency ?? 2) * (useExperimentStore.getState().time)) * (params.amplitude ?? 40)
-        useExperimentStore.setState((s) => ({ time: s.time + dt }))
-      } else if (exp.id === 'function') {
-        const a = params.a ?? 1
-        const b = params.b ?? 0
-        const c = params.c ?? 0
-        const t = (useExperimentStore.getState().time) - 5
-        yValue = a * t * t + b * t + c
-        useExperimentStore.setState((s) => ({ time: s.time + dt }))
-      }
-      addChartData({ x: useExperimentStore.getState().time, y: yValue })
-      rafId = requestAnimationFrame(tick)
+    return () => {
+      resetAll()
     }
-    rafId = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(rafId)
-  }, [isRunning, config, params, addChartData])
+  }, [resetAll])
+
+  const handleDataUpdate = useCallback((data: EngineData) => {
+    addChartData({ x: data.time, y: data.primary })
+  }, [addChartData])
 
   if (!config || !engine) {
     return (
@@ -124,6 +97,8 @@ export default function Lab() {
     clearChartData()
   }
 
+  const formulaWithValues = engine.getFormulaWithValues(params)
+
   return (
     <div className="flex min-h-screen bg-space-900">
       <Sidebar />
@@ -133,6 +108,7 @@ export default function Lab() {
             engine={engine}
             params={params}
             onParamChange={(newParams) => setParams(newParams)}
+            onDataUpdate={handleDataUpdate}
             running={isRunning}
           />
         </div>
@@ -192,7 +168,7 @@ export default function Lab() {
             ))}
           </div>
 
-          <FormulaDisplay formula={config.formula} params={params} />
+          <FormulaDisplay formula={config.formula} formulaWithValues={formulaWithValues} params={params} />
 
           <div className="h-56">
             <DataChart data={chartData} xLabel="时间 (s)" yLabel="值" />

@@ -1,4 +1,4 @@
-import type { ExperimentEngine, DragEvent, DragResult } from '@/data/types'
+import type { ExperimentEngine, DragEvent, DragResult, EngineData } from '@/data/types'
 import { drawGrid, clearCanvas, drawText, drawLine, drawCircle } from '@/utils/canvas'
 import { waveInterference } from '@/utils/physics'
 
@@ -152,5 +152,22 @@ export class WaveEngine implements ExperimentEngine {
     this.ctx = null
     this.imageData = null
     this.dragging = null
+  }
+
+  getData(): EngineData {
+    const frequency = this.params.frequency ?? 2
+    const amplitude = this.params.amplitude ?? 40
+    const intensity = Math.sin(2 * Math.PI * frequency * this.time) * amplitude
+    return {
+      time: this.time,
+      primary: intensity,
+      secondary: Math.abs(intensity),
+    }
+  }
+
+  getFormulaWithValues(params: Record<string, number>): string {
+    const wavelength = params.wavelength ?? 50
+    const slitDistance = params.slitDistance ?? 150
+    return `I = 4I_0 \\cos^2\\left(\\frac{\\pi \\times ${slitDistance} \\times \\sin\\theta}{${wavelength}}\\right)`
   }
 }

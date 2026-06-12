@@ -1,4 +1,4 @@
-import type { ExperimentEngine, DragEvent, DragResult } from '../data/types'
+import type { ExperimentEngine, DragEvent, DragResult, EngineData } from '../data/types'
 import { clearCanvas, drawGrid, drawArrow, drawLine, drawCircle, drawText, drawTrail } from '../utils/canvas'
 import { quadraticValue, quadraticVertex } from '../utils/physics'
 
@@ -236,6 +236,26 @@ export class FunctionEngine implements ExperimentEngine {
     this.curvePoints = []
     this.xIntersects = []
     this.dragging = false
+  }
+
+  getData(): EngineData {
+    const a = this.params.a ?? 1
+    const b = this.params.b ?? 0
+    const c = this.params.c ?? 0
+    return {
+      time: 0,
+      primary: this.vertexMath.y,
+      secondary: this.discriminant,
+    }
+  }
+
+  getFormulaWithValues(params: Record<string, number>): string {
+    const a = params.a ?? 1
+    const b = params.b ?? 0
+    const c = params.c ?? 0
+    const bStr = b >= 0 ? `+ ${b.toFixed(2)}` : `- ${Math.abs(b).toFixed(2)}`
+    const cStr = c >= 0 ? `+ ${c.toFixed(2)}` : `- ${Math.abs(c).toFixed(2)}`
+    return `y = ${a.toFixed(2)}x^2 ${bStr}x ${cStr}`
   }
 
   private toCanvas(mathX: number, mathY: number): { x: number; y: number } {

@@ -4,24 +4,33 @@ import 'katex/dist/katex.min.css'
 
 interface FormulaDisplayProps {
   formula: string
+  formulaWithValues?: string
   params?: Record<string, number>
 }
 
-export default function FormulaDisplay({ formula, params }: FormulaDisplayProps) {
-  const containerRef = useRef<HTMLDivElement>(null)
+export default function FormulaDisplay({ formula, formulaWithValues, params }: FormulaDisplayProps) {
+  const formulaRef = useRef<HTMLDivElement>(null)
+  const valuesFormulaRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const container = containerRef.current
-    if (!container) return
+    const el = formulaRef.current
+    if (!el) return
     try {
-      katex.render(formula, container, {
-        throwOnError: false,
-        displayMode: true,
-      })
+      katex.render(formula, el, { throwOnError: false, displayMode: true })
     } catch {
-      container.textContent = formula
+      el.textContent = formula
     }
   }, [formula])
+
+  useEffect(() => {
+    const el = valuesFormulaRef.current
+    if (!el || !formulaWithValues) return
+    try {
+      katex.render(formulaWithValues, el, { throwOnError: false, displayMode: true })
+    } catch {
+      el.textContent = formulaWithValues
+    }
+  }, [formulaWithValues])
 
   return (
     <div className="glass-panel rounded-xl p-5">
@@ -31,9 +40,19 @@ export default function FormulaDisplay({ formula, params }: FormulaDisplayProps)
       >
         物理公式
       </h3>
-      <div ref={containerRef} className="text-center py-2 overflow-x-auto" />
+      <div ref={formulaRef} className="text-center py-2 overflow-x-auto" />
+
+      {formulaWithValues && (
+        <>
+          <div className="mt-3 pt-3 border-t border-slate-700/50">
+            <span className="text-xs text-slate-500 mb-2 block">代入数值</span>
+            <div ref={valuesFormulaRef} className="text-center py-1 overflow-x-auto" style={{ color: 'var(--color-neon-orange)' }} />
+          </div>
+        </>
+      )}
+
       {params && Object.keys(params).length > 0 && (
-        <div className="mt-4 pt-4 border-t border-slate-700/50">
+        <div className="mt-3 pt-3 border-t border-slate-700/50">
           <div className="grid grid-cols-2 gap-2">
             {Object.entries(params).map(([key, value]) => (
               <div key={key} className="flex justify-between text-xs">

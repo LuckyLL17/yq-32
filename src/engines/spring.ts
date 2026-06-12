@@ -1,4 +1,4 @@
-import type { ExperimentEngine, DragEvent, DragResult } from '../data/types'
+import type { ExperimentEngine, DragEvent, DragResult, EngineData } from '../data/types'
 import { drawGrid, drawSpring, drawCircle, drawArrow, drawText, clearCanvas, drawLine } from '../utils/canvas'
 import { harmonicMotion } from '../utils/physics'
 
@@ -199,5 +199,22 @@ export class SpringEngine implements ExperimentEngine {
     this.ctx = null
     this.trajectoryPoints = []
     this.time = 0
+  }
+
+  getData(): EngineData {
+    return {
+      time: this.time,
+      primary: this.currentDisplacement,
+      secondary: this.currentVelocity,
+    }
+  }
+
+  getFormulaWithValues(params: Record<string, number>): string {
+    const mass = params.mass ?? 1
+    const k = params.stiffness ?? 20
+    const damping = params.damping ?? 0.1
+    const amplitude = params.displacement ?? 1
+    const omega = Math.sqrt(k / mass)
+    return `x(t) = ${amplitude.toFixed(2)} \\cdot e^{-${damping.toFixed(2)}t} \\cos(${omega.toFixed(2)} t)`
   }
 }

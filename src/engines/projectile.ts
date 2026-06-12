@@ -1,4 +1,4 @@
-import type { ExperimentEngine, DragEvent, DragResult } from '../data/types'
+import type { ExperimentEngine, DragEvent, DragResult, EngineData } from '../data/types'
 import { clearCanvas, drawGrid, drawArrow, drawCircle, drawText, drawTrail, drawLine } from '../utils/canvas'
 import { projectilePosition, projectileMaxHeight, projectileRange } from '../utils/physics'
 
@@ -171,5 +171,25 @@ export class ProjectileEngine implements ExperimentEngine {
   destroy(): void {
     this.ctx = null
     this.trail = []
+  }
+
+  getData(): EngineData {
+    const v0 = this.params.velocity ?? 20
+    const angle = (this.params.angle ?? 45) * Math.PI / 180
+    const g = this.params.gravity ?? 9.8
+    const pos = projectilePosition(v0, angle, g, this.time)
+    return {
+      time: this.time,
+      primary: pos.y,
+      secondary: pos.x,
+    }
+  }
+
+  getFormulaWithValues(params: Record<string, number>): string {
+    const v0 = params.velocity ?? 20
+    const angle = params.angle ?? 45
+    const g = params.gravity ?? 9.8
+    const rad = angle * Math.PI / 180
+    return `y = x \\tan(${angle}°) - \\frac{${g.toFixed(1)} x^2}{2 \\times ${v0.toFixed(1)}^2 \\cos^2(${angle}°)}`
   }
 }

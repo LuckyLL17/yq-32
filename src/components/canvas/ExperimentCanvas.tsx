@@ -1,11 +1,12 @@
 import { useEffect, useRef } from 'react'
-import type { ExperimentEngine } from '@/data/types'
+import type { ExperimentEngine, EngineData } from '@/data/types'
 import { AnimationLoop } from '@/utils/animation'
 
 interface ExperimentCanvasProps {
   engine: ExperimentEngine
   params: Record<string, number>
   onParamChange?: (params: Record<string, number>) => void
+  onDataUpdate?: (data: EngineData) => void
   running?: boolean
 }
 
@@ -13,6 +14,7 @@ export default function ExperimentCanvas({
   engine,
   params,
   onParamChange,
+  onDataUpdate,
   running = true,
 }: ExperimentCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -21,6 +23,8 @@ export default function ExperimentCanvas({
   const paramsRef = useRef(params)
   const isDraggingRef = useRef(false)
   const loopRef = useRef<AnimationLoop | null>(null)
+  const onDataUpdateRef = useRef(onDataUpdate)
+  const runningRef = useRef(running)
 
   useEffect(() => {
     engineRef.current = engine
@@ -35,6 +39,14 @@ export default function ExperimentCanvas({
       }
     }
   }, [params])
+
+  useEffect(() => {
+    onDataUpdateRef.current = onDataUpdate
+  }, [onDataUpdate])
+
+  useEffect(() => {
+    runningRef.current = running
+  }, [running])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -61,14 +73,17 @@ export default function ExperimentCanvas({
     resizeObserver.observe(container)
 
     const loop = new AnimationLoop((dt) => {
-      engineRef.current.update(dt, paramsRef.current)
+      if (runningRef.current) {
+        engineRef.current.update(dt, paramsRef.current)
+      }
       engineRef.current.render()
+      if (onDataUpdateRef.current && runningRef.current) {
+        onDataUpdateRef.current(engineRef.current.getData())
+      }
     })
 
     loopRef.current = loop
-    if (running) {
-      loop.start()
-    }
+    loop.start()
 
     return () => {
       resizeObserver.disconnect()
@@ -76,16 +91,6 @@ export default function ExperimentCanvas({
       engineRef.current.destroy()
     }
   }, [])
-
-  useEffect(() => {
-    const loop = loopRef.current
-    if (!loop) return
-    if (running) {
-      loop.start()
-    } else {
-      loop.stop()
-    }
-  }, [running])
 
   const getCanvasCoords = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current
