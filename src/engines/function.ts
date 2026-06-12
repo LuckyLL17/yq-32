@@ -1,14 +1,6 @@
-import type { ExperimentConfig } from '../data/types'
-import { clearCanvas, drawGrid, drawArrow, drawLine, drawCircle, drawText } from '../utils/canvas'
+import type { ExperimentEngine, DragEvent, DragResult } from '../data/types'
+import { clearCanvas, drawGrid, drawArrow, drawLine, drawCircle, drawText, drawTrail } from '../utils/canvas'
 import { quadraticValue, quadraticVertex } from '../utils/physics'
-
-export interface ExperimentEngine {
-  init(canvas: HTMLCanvasElement, config: ExperimentConfig): void
-  update(params: Record<string, number>): void
-  render(): void
-  handleDrag(event: { type: 'start' | 'move' | 'end'; x: number; y: number }): Record<string, number> | null
-  destroy(): void
-}
 
 const UNIT = 40
 const CURVE_COLOR = '#00ffcc'
@@ -31,15 +23,16 @@ export class FunctionEngine implements ExperimentEngine {
   private yIntersect: { x: number; y: number } = { x: 0, y: 0 }
   private discriminant: number = 0
 
-  init(canvas: HTMLCanvasElement): void {
+  init(canvas: HTMLCanvasElement, params: Record<string, number>): void {
     this.ctx = canvas.getContext('2d')!
     this.width = canvas.width
     this.height = canvas.height
     this.originX = this.width / 2
     this.originY = this.height / 2
+    this.params = { ...params }
   }
 
-  update(params: Record<string, number>): void {
+  update(_dt: number, params: Record<string, number>): void {
     this.params = { ...params }
     const a = params.a ?? 1
     const b = params.b ?? 0
@@ -65,10 +58,7 @@ export class FunctionEngine implements ExperimentEngine {
       const sqrtD = Math.sqrt(this.discriminant)
       const x1 = (-b + sqrtD) / (2 * a)
       const x2 = (-b - sqrtD) / (2 * a)
-      this.xIntersects.push(
-        this.toCanvas(x1, 0),
-        this.toCanvas(x2, 0)
-      )
+      this.xIntersects.push(this.toCanvas(x1, 0), this.toCanvas(x2, 0))
       if (Math.abs(x1 - x2) < 1e-9) {
         this.xIntersects = [this.toCanvas(x1, 0)]
       }
@@ -196,7 +186,9 @@ export class FunctionEngine implements ExperimentEngine {
     ctx.save()
     ctx.fillStyle = 'rgba(10, 14, 23, 0.75)'
     ctx.beginPath()
-    ctx.roundRect(x - 200, padding - 4, 208, lineHeight * 5 + 8, 6)
+    if (ctx.roundRect) {
+      ctx.roundRect(x - 200, padding - 4, 208, lineHeight * 5 + 8, 6)
+    }
     ctx.fill()
     ctx.restore()
 
@@ -212,30 +204,31 @@ export class FunctionEngine implements ExperimentEngine {
     drawText(ctx, `Δ = ${this.discriminant.toFixed(2)}`, x - 8, y, dColor, 13, 'right')
   }
 
-  handleDrag(event: { type: 'start' | 'move' | 'end'; x: number; y: number }): Record<string, number> | null {
+  handleDrag(event: DragEvent): DragResult {
     if (event.type === 'start') {
       const dx = event.x - this.vertexCanvas.x
       const dy = event.y - this.vertexCanvas.y
       if (Math.sqrt(dx * dx + dy * dy) < 20) {
         this.dragging = true
+        return { handled: true }
       }
-      return null
+      return { handled: false }
     }
 
     if (event.type === 'move' && this.dragging) {
       const mathPos = this.toMath(event.x, event.y)
       const a = this.params.a ?? 1
-      if (Math.abs(a) < 0.01) return null
+      if (Math.abs(a) < 0.01) return { handled: true }
       const newB = -2 * a * mathPos.x
       const newC = mathPos.y + (newB * newB) / (4 * a)
-      return { a, b: parseFloat(newB.toFixed(2)), c: parseFloat(newC.toFixed(2)) }
+      return { handled: true, params: { ...this.params, b: parseFloat(newB.toFixed(2)), c: parseFloat(newC.toFixed(2)) } }
     }
 
     if (event.type === 'end') {
       this.dragging = false
     }
 
-    return null
+    return { handled: false }
   }
 
   destroy(): void {
