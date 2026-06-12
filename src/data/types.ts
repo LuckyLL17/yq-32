@@ -1,3 +1,13 @@
+export type GuideStepType = 'observe' | 'hypothesis' | 'operate' | 'verify' | 'conclusion'
+
+export interface GuideStep {
+  type: GuideStepType
+  title: string
+  tip: string
+  explanation: string
+  highlightArea: 'canvas' | 'params' | 'formula' | 'chart' | 'controls'
+}
+
 export interface Experiment {
   id: string
   title: string
@@ -6,6 +16,7 @@ export interface Experiment {
   difficulty: 'beginner' | 'intermediate' | 'advanced'
   tags: string[]
   icon: string
+  guide: GuideStep[]
 }
 
 export interface ParamConfig {

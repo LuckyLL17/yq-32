@@ -148,3 +148,247 @@ body {
 }
 
 .katex { color: #e2e8f0; }
+
+.guide-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.75);
+  z-index: 9998;
+  pointer-events: none;
+}
+
+.guide-highlight {
+  position: relative;
+  z-index: 9999;
+  pointer-events: auto;
+}
+
+.guide-highlight::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border: 3px solid var(--color-neon-cyan);
+  border-radius: 12px;
+  animation: guide-pulse 1.5s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+@keyframes guide-pulse {
+  0%, 100% {
+    box-shadow: 0 0 10px var(--color-neon-cyan), 0 0 20px var(--color-neon-cyan)88, inset 0 0 10px var(--color-neon-cyan)22;
+    border-color: var(--color-neon-cyan);
+  }
+  50% {
+    box-shadow: 0 0 25px var(--color-neon-cyan), 0 0 50px var(--color-neon-cyan)aa, inset 0 0 20px var(--color-neon-cyan)44;
+    border-color: #fff;
+  }
+}
+
+.guide-card {
+  position: fixed;
+  z-index: 10000;
+  width: 380px;
+  max-width: calc(100vw - 40px);
+  background: rgba(15, 21, 36, 0.98);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--color-neon-cyan);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 0 30px var(--color-neon-cyan)44, 0 20px 60px rgba(0, 0, 0, 0.5);
+  animation: guide-slide-in 0.4s ease-out;
+}
+
+@keyframes guide-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.guide-card::before {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  background: rgba(15, 21, 36, 0.98);
+  border-left: 1px solid var(--color-neon-cyan);
+  border-top: 1px solid var(--color-neon-cyan);
+}
+
+.guide-card.arrow-top::before {
+  top: -9px;
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.guide-card.arrow-bottom::before {
+  bottom: -9px;
+  left: 50%;
+  transform: translateX(-50%) rotate(225deg);
+}
+
+.guide-card.arrow-left::before {
+  left: -9px;
+  top: 50%;
+  transform: translateY(-50%) rotate(-45deg);
+}
+
+.guide-card.arrow-right::before {
+  right: -9px;
+  top: 50%;
+  transform: translateY(-50%) rotate(135deg);
+}
+
+.guide-step-indicator {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.guide-step-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--color-space-700);
+  border: 2px solid var(--color-space-600);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.guide-step-dot.active {
+  background: var(--color-neon-cyan);
+  border-color: var(--color-neon-cyan);
+  box-shadow: 0 0 10px var(--color-neon-cyan);
+}
+
+.guide-step-dot.completed {
+  background: var(--color-neon-green);
+  border-color: var(--color-neon-green);
+}
+
+.guide-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-neon-cyan);
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.guide-tip {
+  font-size: 13px;
+  color: var(--color-neon-orange);
+  text-align: center;
+  margin-bottom: 16px;
+  font-style: italic;
+}
+
+.guide-explanation {
+  font-size: 14px;
+  line-height: 1.8;
+  color: #cbd5e1;
+  margin-bottom: 20px;
+  text-align: justify;
+}
+
+.guide-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.guide-btn {
+  padding: 10px 20px;
+  border: 1px solid var(--color-neon-cyan);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-neon-cyan);
+  font-family: 'Orbitron', monospace;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.guide-btn:hover:not(:disabled) {
+  background: rgba(0, 240, 255, 0.15);
+  box-shadow: 0 0 15px var(--color-neon-cyan)44;
+}
+
+.guide-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.guide-btn-primary {
+  background: var(--color-neon-cyan);
+  color: var(--color-space-900);
+  font-weight: 700;
+}
+
+.guide-btn-primary:hover:not(:disabled) {
+  background: #33f3ff;
+  box-shadow: 0 0 20px var(--color-neon-cyan)88;
+}
+
+.guide-btn-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 20px;
+  cursor: pointer;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.guide-btn-close:hover {
+  color: var(--color-neon-orange);
+  background: rgba(255, 107, 43, 0.1);
+}
+
+.guide-start-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border: 1px solid var(--color-neon-purple);
+  border-radius: 8px;
+  background: rgba(168, 85, 247, 0.1);
+  color: var(--color-neon-purple);
+  font-family: 'Orbitron', monospace;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.guide-start-btn:hover {
+  background: rgba(168, 85, 247, 0.2);
+  box-shadow: 0 0 15px var(--color-neon-purple)44;
+}
+
+.guide-progress-text {
+  font-size: 12px;
+  color: #94a3b8;
+  text-align: center;
+  margin-top: 12px;
+}

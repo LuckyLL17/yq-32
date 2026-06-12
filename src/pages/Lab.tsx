@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useCallback } from 'react'
 import { useParams } from 'react-router-dom'
-import { Play, Pause, RotateCcw } from 'lucide-react'
+import { Play, Pause, RotateCcw, GraduationCap } from 'lucide-react'
 import { experiments } from '@/data/experiments'
 import type { ExperimentEngine, EngineData } from '@/data/types'
 import { useExperimentStore } from '@/stores/experimentStore'
@@ -9,6 +9,7 @@ import ParamSlider from '@/components/controls/ParamSlider'
 import FormulaDisplay from '@/components/formula/FormulaDisplay'
 import DataChart from '@/components/charts/DataChart'
 import Sidebar from '@/components/layout/Sidebar'
+import ExperimentGuide from '@/components/guide/ExperimentGuide'
 import { SpringEngine } from '@/engines/spring'
 import { ProjectileEngine } from '@/engines/projectile'
 import { WaveEngine } from '@/engines/wave'
@@ -30,6 +31,7 @@ export default function Lab() {
     params,
     isRunning,
     chartData,
+    guideVisible,
     setCurrentExperiment,
     setParam,
     setParams,
@@ -38,6 +40,7 @@ export default function Lab() {
     clearChartData,
     resetParams,
     resetAll,
+    showGuide,
   } = useExperimentStore()
 
   const engine = useMemo<ExperimentEngine | null>(() => {
@@ -105,11 +108,17 @@ export default function Lab() {
 
   const formulaWithValues = engine.getFormulaWithValues(params)
 
+  const handleStartGuide = () => {
+    if (config?.experiment.guide) {
+      showGuide(config.experiment.guide)
+    }
+  }
+
   return (
     <div className="flex min-h-screen bg-space-900">
       <Sidebar />
       <div className="flex-1 ml-16 flex">
-        <div className="flex-1 relative">
+        <div className="flex-1 relative" data-guide-area="canvas">
           <ExperimentCanvas
             engine={engine}
             params={params}
@@ -117,6 +126,15 @@ export default function Lab() {
             onDataUpdate={handleDataUpdate}
             running={isRunning}
           />
+          {!guideVisible && config?.experiment.guide && (
+            <button
+              onClick={handleStartGuide}
+              className="guide-start-btn absolute top-4 left-4 z-10"
+            >
+              <GraduationCap className="w-4 h-4" />
+              开始实验引导
+            </button>
+          )}
         </div>
         <div className="w-[320px] flex-shrink-0 border-l border-neon-cyan/20 bg-space-800/50 backdrop-blur-xl overflow-y-auto p-4 space-y-4">
           <div className="glass-panel rounded-xl p-5">
@@ -134,7 +152,7 @@ export default function Lab() {
             </span>
           </div>
 
-          <div className="glass-panel rounded-xl p-5">
+          <div className="glass-panel rounded-xl p-5" data-guide-area="controls">
             <h3 className="text-sm font-orbitron mb-4 tracking-wider" style={{ color: 'var(--color-neon-cyan)' }}>
               运行控制
             </h3>
@@ -156,7 +174,7 @@ export default function Lab() {
             </div>
           </div>
 
-          <div className="glass-panel rounded-xl p-5 space-y-5">
+          <div className="glass-panel rounded-xl p-5 space-y-5" data-guide-area="params">
             <h3 className="text-sm font-orbitron tracking-wider" style={{ color: 'var(--color-neon-cyan)' }}>
               参数调节
             </h3>
@@ -174,13 +192,16 @@ export default function Lab() {
             ))}
           </div>
 
-          <FormulaDisplay formula={config.formula} formulaWithValues={formulaWithValues} params={params} />
+          <div data-guide-area="formula">
+            <FormulaDisplay formula={config.formula} formulaWithValues={formulaWithValues} params={params} />
+          </div>
 
-          <div className="h-56">
+          <div className="h-56" data-guide-area="chart">
             <DataChart data={chartData} xLabel="时间 (s)" yLabel="值" />
           </div>
         </div>
       </div>
+      <ExperimentGuide />
     </div>
   )
 }
