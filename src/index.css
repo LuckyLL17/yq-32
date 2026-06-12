@@ -3,12 +3,148 @@
 @tailwind utilities;
 
 :root {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
-  line-height: 1.5;
-  font-weight: 400;
+  --color-space-900: #0a0e17;
+  --color-space-800: #0f1524;
+  --color-space-700: #16213e;
+  --color-space-600: #1a1a2e;
+  --color-neon-cyan: #00f0ff;
+  --color-neon-orange: #ff6b2b;
+  --color-neon-green: #0f9b58;
+  --color-neon-purple: #a855f7;
+}
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'IBM Plex Sans', sans-serif;
+  background-color: var(--color-space-900);
+  color: #e2e8f0;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
+
+.font-orbitron {
+  font-family: 'Orbitron', monospace;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-space-900);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-space-700);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-neon-cyan);
+}
+
+.glow-text {
+  text-shadow: 0 0 10px var(--color-neon-cyan), 0 0 20px var(--color-neon-cyan)33;
+}
+
+.glow-border {
+  box-shadow: 0 0 5px var(--color-neon-cyan)44, inset 0 0 5px var(--color-neon-cyan)11;
+}
+
+.glow-border-orange {
+  box-shadow: 0 0 5px var(--color-neon-orange)44, inset 0 0 5px var(--color-neon-orange)11;
+}
+
+.glass-panel {
+  background: rgba(15, 21, 36, 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 240, 255, 0.15);
+}
+
+.neon-btn {
+  position: relative;
+  padding: 10px 24px;
+  border: 1px solid var(--color-neon-cyan);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-neon-cyan);
+  font-family: 'Orbitron', monospace;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.neon-btn:hover {
+  background: rgba(0, 240, 255, 0.1);
+  box-shadow: 0 0 15px var(--color-neon-cyan)44, 0 0 30px var(--color-neon-cyan)22;
+  transform: translateY(-1px);
+}
+
+.neon-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 0 25px var(--color-neon-cyan)66;
+}
+
+.neon-btn-orange {
+  border-color: var(--color-neon-orange);
+  color: var(--color-neon-orange);
+}
+
+.neon-btn-orange:hover {
+  background: rgba(255, 107, 43, 0.1);
+  box-shadow: 0 0 15px var(--color-neon-orange)44, 0 0 30px var(--color-neon-orange)22;
+}
+
+@keyframes grid-move {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(40px, 40px); }
+}
+
+.canvas-grid {
+  background-image:
+    linear-gradient(rgba(0, 240, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 240, 255, 0.05) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.slider-neon::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-neon-cyan);
+  box-shadow: 0 0 8px var(--color-neon-cyan);
+  cursor: pointer;
+}
+
+.slider-neon::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--color-neon-cyan), var(--color-neon-orange));
+}
+
+.slider-neon {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  outline: none;
+  background: transparent;
+}
+
+.katex { color: #e2e8f0; }
