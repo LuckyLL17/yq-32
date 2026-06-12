@@ -10,6 +10,13 @@ const stepIcons: Record<string, string> = {
   conclusion: '✅',
 }
 
+interface HighlightRect {
+  top: number
+  left: number
+  width: number
+  height: number
+}
+
 export default function ExperimentGuide() {
   const {
     guideVisible,
@@ -22,6 +29,7 @@ export default function ExperimentGuide() {
   } = useExperimentStore()
 
   const [cardPosition, setCardPosition] = useState({ top: 0, left: 0, arrow: 'bottom' as 'top' | 'bottom' | 'left' | 'right' })
+  const [highlightRect, setHighlightRect] = useState<HighlightRect | null>(null)
   const cardRef = useRef<HTMLDivElement>(null)
 
   const currentStep = useMemo(() => {
@@ -32,9 +40,31 @@ export default function ExperimentGuide() {
   }, [currentGuide, currentGuideStep])
 
   useEffect(() => {
-    if (!guideVisible || !currentStep) return
+    if (!guideVisible || !currentStep) {
+      setHighlightRect(null)
+      return
+    }
 
-    const updatePosition = () => {
+    const updateHighlight = () => {
+      const targetSelector = `[data-guide-area="${currentStep.highlightArea}"]`
+      const targetElement = document.querySelector(targetSelector) as HTMLElement
+
+      if (!targetElement) {
+        setHighlightRect(null)
+        return
+      }
+
+      const rect = targetElement.getBoundingClientRect()
+      const padding = 8
+      setHighlightRect({
+        top: rect.top - padding,
+        left: rect.left - padding,
+        width: rect.width + padding * 2,
+        height: rect.height + padding * 2,
+      })
+    }
+
+    const updateCardPosition = () => {
       const targetSelector = `[data-guide-area="${currentStep.highlightArea}"]`
       const targetElement = document.querySelector(targetSelector) as HTMLElement
 
@@ -46,7 +76,7 @@ export default function ExperimentGuide() {
       const rect = targetElement.getBoundingClientRect()
       const cardWidth = 380
       const cardHeight = 320
-      const gap = 20
+      const gap = 24
 
       let top = 0
       let left = 0
@@ -85,13 +115,18 @@ export default function ExperimentGuide() {
       setCardPosition({ top, left, arrow })
     }
 
-    updatePosition()
-    window.addEventListener('resize', updatePosition)
-    window.addEventListener('scroll', updatePosition, true)
+    const updateAll = () => {
+      updateHighlight()
+      updateCardPosition()
+    }
+
+    updateAll()
+    window.addEventListener('resize', updateAll)
+    window.addEventListener('scroll', updateAll, true)
 
     return () => {
-      window.removeEventListener('resize', updatePosition)
-      window.removeEventListener('scroll', updatePosition, true)
+      window.removeEventListener('resize', updateAll)
+      window.removeEventListener('scroll', updateAll, true)
     }
   }, [guideVisible, currentStep])
 
@@ -133,9 +168,76 @@ export default function ExperimentGuide() {
   const isFirstStep = currentGuideStep === 0
   const isLastStep = currentGuideStep === currentGuide.length - 1
 
+  const renderMaskOverlay = () => {
+    const radius = 12
+
+    if (!highlightRect) {
+      return (
+        <div
+          className="guide-overlay-mask"
+          style={{ background: 'rgba(0, 0, 0, 0.78)' }}
+        />
+      )
+    }
+
+    const { top, left, width, height } = highlightRect
+    const right = left + width
+    const bottom = top + height
+
+    const svgWidth = window.innerWidth
+    const svgHeight = window.innerHeight
+
+    const holePath = `
+      M ${left + radius} ${top}
+      L ${right - radius} ${top}
+      Q ${right} ${top} ${right} ${top + radius}
+      L ${right} ${bottom - radius}
+      Q ${right} ${bottom} ${right - radius} ${bottom}
+      L ${left + radius} ${bottom}
+      Q ${left} ${bottom} ${left} ${bottom - radius}
+      L ${left} ${top + radius}
+      Q ${left} ${top} ${left + radius} ${top}
+      Z
+    `
+
+    const fullPath = `
+      M 0 0 L ${svgWidth} 0 L ${svgWidth} ${svgHeight} L 0 ${svgHeight} Z
+      ${holePath}
+    `
+
+    return (
+      <svg
+        className="guide-overlay-mask"
+        width={svgWidth}
+        height={svgHeight}
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <defs>
+          <filter id="guide-hole-glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="6" result="blur" />
+            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+          </filter>
+        </defs>
+        <path
+          d={fullPath}
+          fill="rgba(0, 0, 0, 0.78)"
+          fillRule="evenodd"
+        />
+        <path
+          d={holePath}
+          fill="none"
+          stroke="var(--color-neon-cyan)"
+          strokeWidth="2"
+          filter="url(#guide-hole-glow)"
+          className="guide-hole-border"
+        />
+      </svg>
+    )
+  }
+
   return (
     <>
-      <div className="guide-overlay" />
+      {renderMaskOverlay()}
 
       <div
         ref={cardRef}

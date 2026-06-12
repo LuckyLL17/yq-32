@@ -5,7 +5,7 @@ export interface GuideStep {
   title: string
   tip: string
   explanation: string
-  highlightArea: 'canvas' | 'params' | 'formula' | 'chart' | 'controls'
+  highlightArea: 'canvas' | 'params' | 'formula' | 'chart' | 'controls' | 'info'
 }
 
 export interface Experiment {

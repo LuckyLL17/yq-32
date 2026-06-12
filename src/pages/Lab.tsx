@@ -137,7 +137,7 @@ export default function Lab() {
           )}
         </div>
         <div className="w-[320px] flex-shrink-0 border-l border-neon-cyan/20 bg-space-800/50 backdrop-blur-xl overflow-y-auto p-4 space-y-4">
-          <div className="glass-panel rounded-xl p-5">
+          <div className="glass-panel rounded-xl p-5" data-guide-area="info">
             <h1 className="font-orbitron text-xl font-bold text-white mb-2">{config.experiment.title}</h1>
             <p className="text-sm text-slate-400 leading-relaxed mb-3">{config.experiment.description}</p>
             <span
