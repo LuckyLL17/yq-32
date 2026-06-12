@@ -13,6 +13,8 @@ import { SpringEngine } from '@/engines/spring'
 import { ProjectileEngine } from '@/engines/projectile'
 import { WaveEngine } from '@/engines/wave'
 import { FunctionEngine } from '@/engines/function'
+import { MoleculeEngine } from '@/engines/molecule'
+import { ReactionEngine } from '@/engines/reaction'
 
 const difficultyLabels: Record<string, { text: string; color: string }> = {
   beginner: { text: '入门', color: 'var(--color-neon-green)' },
@@ -49,6 +51,10 @@ export default function Lab() {
         return new WaveEngine()
       case 'function':
         return new FunctionEngine()
+      case 'molecule':
+        return new MoleculeEngine()
+      case 'reaction':
+        return new ReactionEngine()
       default:
         return null
     }
