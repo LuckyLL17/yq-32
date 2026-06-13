@@ -1097,7 +1097,6 @@ export default function SandboxCanvas({
               x: firstPos.x,
               y: firstPos.y,
             } as Partial<Part>)
-            onPartClick(null)
             return
           } else if (!connector.targetId) {
             const anchorPart = parts.find((p) => p.id === connector.anchorId)
