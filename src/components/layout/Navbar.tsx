@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, BookOpen, Atom } from 'lucide-react';
+import { Home, BookOpen, Atom, Boxes } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function Navbar() {
@@ -8,6 +8,7 @@ export default function Navbar() {
   const navLinks = [
     { to: '/', label: '首页', icon: Home },
     { to: '/library', label: '实验库', icon: BookOpen },
+    { to: '/sandbox', label: '沙盒模式', icon: Boxes },
   ];
 
   return (

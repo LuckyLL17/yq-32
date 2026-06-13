@@ -122,12 +122,12 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="animate-slide-up flex gap-4" style={{ animationDelay: '0.5s', animationFillMode: 'both' }}>
+          <div className="animate-slide-up flex flex-wrap gap-4 justify-center" style={{ animationDelay: '0.5s', animationFillMode: 'both' }}>
             <button className="neon-btn" onClick={() => navigate('/library')}>
               开始探索
             </button>
-            <button className="neon-btn neon-btn-orange">
-              查看文档
+            <button className="neon-btn neon-btn-orange" onClick={() => navigate('/sandbox')}>
+              🧪 自由沙盒
             </button>
           </div>
         </div>
