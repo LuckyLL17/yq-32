@@ -345,8 +345,12 @@ export const useSandboxStore = create<SandboxState>((set, get) => ({
     const connector = parts.find((p) => p.id === connectorId)
     if (!connector) return
     if (connector.type === 'spring' || connector.type === 'rope') {
-      get().updatePart(connectorId, { anchorId, targetId } as Partial<Part>)
+      if (targetId) {
+        get().updatePart(connectorId, { anchorId, targetId } as Partial<Part>)
+        set({ connectingFrom: null, connectingType: null })
+      } else {
+        get().updatePart(connectorId, { anchorId } as Partial<Part>)
+      }
     }
-    set({ connectingFrom: null, connectingType: null })
   },
 }))

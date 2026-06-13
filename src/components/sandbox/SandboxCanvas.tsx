@@ -20,11 +20,9 @@ interface SandboxCanvasProps {
   isRunning: boolean
   selectedPartId: string | null
   connectingFrom: string | null
-  connectingType: 'spring' | 'rope' | null
   onPartClick: (id: string | null) => void
   onPartDrag: (id: string, x: number, y: number) => void
   onDropPart: (template: PartTemplate, x: number, y: number) => void
-  onConnectorLink: (connectorId: string, targetId: string) => void
   onUpdatePart: (id: string, updates: Partial<Part>) => void
   onEndConnecting: () => void
   onTick: () => void
@@ -48,11 +46,9 @@ export default function SandboxCanvas({
   isRunning,
   selectedPartId,
   connectingFrom,
-  connectingType,
   onPartClick,
   onPartDrag,
   onDropPart,
-  onConnectorLink,
   onUpdatePart,
   onEndConnecting,
   onTick,
@@ -152,10 +148,9 @@ export default function SandboxCanvas({
   const resolveBallRectCollision = useCallback(
     (
       ball: { x: number; y: number; radius: number; restitution: number; mass: number },
-      rect: { x: number; y: number; w: number; h: number; locked: boolean; restitution: number },
+      rect: { x: number; y: number; w: number; h: number; locked: boolean; restitution: number; mass?: number },
       ballState: { vx: number; vy: number },
-      gravity: number,
-      dt: number
+      rectState: { vx: number; vy: number } | null
     ) => {
       const halfW = rect.w / 2
       const halfH = rect.h / 2
@@ -169,112 +164,92 @@ export default function SandboxCanvas({
 
       const dx = ball.x - closestX
       const dy = ball.y - closestY
-      const dist = Math.sqrt(dx * dx + dy * dy)
+      const distSq = dx * dx + dy * dy
 
-      if (dist < ball.radius) {
-        let nx: number, ny: number, overlap: number
+      if (distSq >= ball.radius * ball.radius) return
 
-        const ballInside = ball.x > rectLeft && ball.x < rectRight && ball.y > rectTop && ball.y < rectBot
+      let nx: number, ny: number, overlap: number
 
-        if (ballInside) {
-          const penLeft = ball.x - rectLeft
-          const penRight = rectRight - ball.x
-          const penTop = ball.y - rectTop
-          const penBot = rectBot - ball.y
-          const minPen = Math.min(penLeft, penRight, penTop, penBot)
-          if (minPen === penLeft) {
-            nx = -1
-            ny = 0
-            overlap = ball.radius + penLeft
-          } else if (minPen === penRight) {
-            nx = 1
-            ny = 0
-            overlap = ball.radius + penRight
-          } else if (minPen === penTop) {
-            nx = 0
-            ny = -1
-            overlap = ball.radius + penTop
-          } else {
-            nx = 0
-            ny = 1
-            overlap = ball.radius + penBot
-          }
-        } else if (dist > 0.0001) {
-          nx = dx / dist
-          ny = dy / dist
-          overlap = ball.radius - dist
+      const ballInside = ball.x > rectLeft && ball.x < rectRight && ball.y > rectTop && ball.y < rectBot
+
+      if (ballInside) {
+        const penLeft = ball.x - rectLeft
+        const penRight = rectRight - ball.x
+        const penTop = ball.y - rectTop
+        const penBot = rectBot - ball.y
+        const minPen = Math.min(penLeft, penRight, penTop, penBot)
+        if (minPen === penLeft) {
+          nx = -1; ny = 0; overlap = penLeft + ball.radius
+        } else if (minPen === penRight) {
+          nx = 1; ny = 0; overlap = penRight + ball.radius
+        } else if (minPen === penTop) {
+          nx = 0; ny = -1; overlap = penTop + ball.radius
         } else {
-          const penLeft = ball.x - rectLeft
-          const penRight = rectRight - ball.x
-          const penTop = ball.y - rectTop
-          const penBot = rectBot - ball.y
-          const minPen = Math.min(penLeft, penRight, penTop, penBot)
-          if (minPen === penLeft) {
-            nx = -1
-            ny = 0
-          } else if (minPen === penRight) {
-            nx = 1
-            ny = 0
-          } else if (minPen === penTop) {
-            nx = 0
-            ny = -1
-          } else {
-            nx = 0
-            ny = 1
-          }
-          overlap = ball.radius
+          nx = 0; ny = 1; overlap = penBot + ball.radius
         }
+      } else if (distSq > 0.00001) {
+        const dist = Math.sqrt(distSq)
+        nx = dx / dist
+        ny = dy / dist
+        overlap = ball.radius - dist
+      } else {
+        const penLeft = ball.x - rectLeft
+        const penRight = rectRight - ball.x
+        const penTop = ball.y - rectTop
+        const penBot = rectBot - ball.y
+        const minPen = Math.min(penLeft, penRight, penTop, penBot)
+        if (minPen === penLeft) { nx = -1; ny = 0 }
+        else if (minPen === penRight) { nx = 1; ny = 0 }
+        else if (minPen === penTop) { nx = 0; ny = -1 }
+        else { nx = 0; ny = 1 }
+        overlap = ball.radius
+      }
 
-        const combinedRest = (ball.restitution + rect.restitution) / 2
-        const velAlongNormal = ballState.vx * nx + ballState.vy * ny
+      const invMassA = 1 / ball.mass
+      const invMassB = rect.locked ? 0 : 1 / (rect.mass ?? 1)
+      const totalInvMass = invMassA + invMassB
 
-        if (velAlongNormal > 0) return
+      ball.x += nx * overlap * (invMassA / totalInvMass) * 1.0
+      ball.y += ny * overlap * (invMassA / totalInvMass) * 1.0
 
-        const j = -(1 + combinedRest) * velAlongNormal
-        const invMassA = 1 / ball.mass
-        const invMassB = rect.locked ? 0 : 1
-        const impulse = j / (invMassA + invMassB)
+      if (!rect.locked && rectState) {
+        const rectNewX = rect.x - nx * overlap * (invMassB / totalInvMass) * 1.0
+        const rectNewY = rect.y - ny * overlap * (invMassB / totalInvMass) * 1.0
+        rect.x = rectNewX
+        rect.y = rectNewY
+      }
 
-        ballState.vx += impulse * invMassA * nx
-        ballState.vy += impulse * invMassA * ny
+      const rvx = ballState.vx - (rectState ? rectState.vx : 0)
+      const rvy = ballState.vy - (rectState ? rectState.vy : 0)
+      const velAlongNormal = rvx * nx + rvy * ny
 
-        const isCornerContact = Math.abs(nx) > 0.1 && Math.abs(ny) > 0.1
-        const isTopOrBottom = Math.abs(ny) > 0.9
-        const isLeftOrRight = Math.abs(nx) > 0.9
+      if (velAlongNormal > 0) return
 
-        if (!isCornerContact) {
-          const friction = 0.25
-          let tx: number, ty: number
-          if (isTopOrBottom) {
-            tx = 1
-            ty = 0
-          } else if (isLeftOrRight) {
-            tx = 0
-            ty = 1
-          } else {
-            tx = -ny
-            ty = nx
-          }
+      const combinedRest = (ball.restitution + rect.restitution) / 2
+      const j = -(1 + combinedRest) * velAlongNormal / totalInvMass
 
-          const velAlongTangent = ballState.vx * tx + ballState.vy * ty
-          const jt = -velAlongTangent * friction
-          ballState.vx += jt * invMassA * tx
-          ballState.vy += jt * invMassA * ty
+      ballState.vx += j * invMassA * nx
+      ballState.vy += j * invMassA * ny
 
-          if (isTopOrBottom && gravity > 0) {
-            ballState.vx *= 0.98
-          }
-        } else {
-          ballState.vx *= 0.995
-          ballState.vy *= 0.995
-        }
+      if (!rect.locked && rectState) {
+        rectState.vx -= j * invMassB * nx
+        rectState.vy -= j * invMassB * ny
+      }
 
-        ball.x += nx * overlap * 1.01
-        ball.y += ny * overlap * 1.01
+      const tx = -ny
+      const ty = nx
+      const velAlongTangent = rvx * tx + rvy * ty
+      const friction = 0.3
+      const jt = -velAlongTangent * friction / totalInvMass
+      const maxJt = Math.abs(j) * friction
+      const clampedJt = Math.max(-maxJt, Math.min(maxJt, jt))
 
-        if (ny < -0.5 && ballState.vy < gravity * dt * 1.5) {
-          ballState.vy = Math.min(ballState.vy, -gravity * dt * 0.5)
-        }
+      ballState.vx += clampedJt * invMassA * tx
+      ballState.vy += clampedJt * invMassA * ty
+
+      if (!rect.locked && rectState) {
+        rectState.vx -= clampedJt * invMassB * tx
+        rectState.vy -= clampedJt * invMassB * ty
       }
     },
     []
@@ -323,21 +298,6 @@ export default function SandboxCanvas({
     },
     []
   )
-
-  const getPartWorldPos = useCallback((part: Part, offsetX = 0, offsetY = 0) => {
-    const state = physicsStateRef.current[part.id]
-    const px = state?.x ?? part.x
-    const py = state?.y ?? part.y
-    const rot = state?.rotation ?? part.rotation
-
-    const cos = Math.cos(rot)
-    const sin = Math.sin(rot)
-
-    return {
-      x: px + offsetX * cos - offsetY * sin,
-      y: py + offsetX * sin + offsetY * cos,
-    }
-  }, [])
 
   const step = useCallback(
     (dt: number) => {
@@ -467,8 +427,7 @@ export default function SandboxCanvas({
                 { x: sa.x, y: sa.y, radius: a.radius, restitution: a.restitution, mass: a.mass },
                 { x: ss.x, y: ss.y, w: s.width, h: s.height, locked: true, restitution: 0.3 },
                 sa,
-                gravityEnabled ? gravity : 0,
-                dt
+                null
               )
             } else if (s.type === 'inclined-plane') {
               const angleRad = (s.angle * Math.PI) / 180
@@ -498,17 +457,12 @@ export default function SandboxCanvas({
               const dist = Math.sqrt(dx * dx + dy * dy)
 
               if (dist < a.radius && dist > 0) {
-                let nx = -sin
-                let ny = -cos
-                const sideDot = (sa.x - cx) * -sin + (sa.y - (cy - s.height / 2)) * -cos
-                if (sideDot < 0) {
-                  nx = sin
-                  ny = cos
-                }
+                const nx = dx / dist
+                const ny = dy / dist
 
                 const overlap = a.radius - dist
-                sa.x += nx * overlap * 1.01
-                sa.y += ny * overlap * 1.01
+                sa.x += nx * overlap * 1.0
+                sa.y += ny * overlap * 1.0
 
                 const velAlongNormal = sa.vx * nx + sa.vy * ny
                 if (velAlongNormal < 0) {
@@ -517,12 +471,14 @@ export default function SandboxCanvas({
                   sa.vx += jn * nx
                   sa.vy += jn * ny
 
-                  const tx = cos
-                  const ty = -sin
+                  const tx = -ny
+                  const ty = nx
                   const velAlongTangent = sa.vx * tx + sa.vy * ty
-                  const jt = -velAlongTangent * s.friction
-                  sa.vx += jt * tx
-                  sa.vy += jt * ty
+                  const frictionImpulse = -velAlongTangent * s.friction
+                  const maxFriction = Math.abs(jn) * s.friction
+                  const clampedFriction = Math.max(-maxFriction, Math.min(maxFriction, frictionImpulse))
+                  sa.vx += clampedFriction * tx
+                  sa.vy += clampedFriction * ty
                 }
               }
             }
@@ -563,23 +519,23 @@ export default function SandboxCanvas({
                 const restitution = (a.restitution + 0.3) / 2
 
                 if (minOverlap === overlapY1) {
-                  sa.y -= overlapY1 * 1.01
+                  sa.y -= overlapY1
                   if (sa.vy > 0) {
                     sa.vy = -sa.vy * restitution
                     sa.vx *= 0.95
                     sa.angularVel = (sa.angularVel ?? 0) * 0.8
                   }
                 } else if (minOverlap === overlapY2) {
-                  sa.y += overlapY2 * 1.01
+                  sa.y += overlapY2
                   if (sa.vy < 0) sa.vy = -sa.vy * restitution
                 } else if (minOverlap === overlapX1) {
-                  sa.x -= overlapX1 * 1.01
+                  sa.x -= overlapX1
                   if (sa.vx > 0) {
                     sa.vx = -sa.vx * restitution
                     sa.angularVel = (sa.angularVel ?? 0) * 0.8
                   }
                 } else {
-                  sa.x += overlapX2 * 1.01
+                  sa.x += overlapX2
                   if (sa.vx < 0) {
                     sa.vx = -sa.vx * restitution
                     sa.angularVel = (sa.angularVel ?? 0) * 0.8
@@ -625,18 +581,16 @@ export default function SandboxCanvas({
           } else if (a.type === 'ball' && b.type === 'block') {
             resolveBallRectCollision(
               { x: sa.x, y: sa.y, radius: (a as BallPart).radius, restitution: a.restitution, mass: a.mass },
-              { x: sb.x, y: sb.y, w: (b as BlockPart).width, h: (b as BlockPart).height, locked: false, restitution: b.restitution },
+              { x: sb.x, y: sb.y, w: (b as BlockPart).width, h: (b as BlockPart).height, locked: false, restitution: b.restitution, mass: b.mass },
               sa,
-              gravityEnabled ? gravity : 0,
-              dt
+              sb
             )
           } else if (a.type === 'block' && b.type === 'ball') {
             resolveBallRectCollision(
               { x: sb.x, y: sb.y, radius: (b as BallPart).radius, restitution: b.restitution, mass: b.mass },
-              { x: sa.x, y: sa.y, w: (a as BlockPart).width, h: (a as BlockPart).height, locked: false, restitution: a.restitution },
+              { x: sa.x, y: sa.y, w: (a as BlockPart).width, h: (a as BlockPart).height, locked: false, restitution: a.restitution, mass: a.mass },
               sb,
-              gravityEnabled ? gravity : 0,
-              dt
+              sa
             )
           } else if (a.type === 'block' && b.type === 'block') {
             const aHalfW = a.width / 2
@@ -655,8 +609,8 @@ export default function SandboxCanvas({
               const ratio = b.mass / (a.mass + b.mass)
 
               if (minOverlap === overlapY1) {
-                sa.y -= overlapY1 * ratio * 1.01
-                sb.y += overlapY1 * (1 - ratio) * 1.01
+                sa.y -= overlapY1 * ratio
+                sb.y += overlapY1 * (1 - ratio)
                 const rv = sa.vy - sb.vy
                 if (rv > 0) {
                   const imp = (1 + restitution) * rv / (1 / a.mass + 1 / b.mass)
@@ -664,8 +618,8 @@ export default function SandboxCanvas({
                   sb.vy += imp / b.mass
                 }
               } else if (minOverlap === overlapY2) {
-                sa.y += overlapY2 * ratio * 1.01
-                sb.y -= overlapY2 * (1 - ratio) * 1.01
+                sa.y += overlapY2 * ratio
+                sb.y -= overlapY2 * (1 - ratio)
                 const rv = sb.vy - sa.vy
                 if (rv > 0) {
                   const imp = (1 + restitution) * rv / (1 / a.mass + 1 / b.mass)
@@ -673,8 +627,8 @@ export default function SandboxCanvas({
                   sa.vy += imp / a.mass
                 }
               } else if (minOverlap === overlapX1) {
-                sa.x -= overlapX1 * ratio * 1.01
-                sb.x += overlapX1 * (1 - ratio) * 1.01
+                sa.x -= overlapX1 * ratio
+                sb.x += overlapX1 * (1 - ratio)
                 const rv = sa.vx - sb.vx
                 if (rv > 0) {
                   const imp = (1 + restitution) * rv / (1 / a.mass + 1 / b.mass)
@@ -682,8 +636,8 @@ export default function SandboxCanvas({
                   sb.vx += imp / b.mass
                 }
               } else {
-                sa.x += overlapX2 * ratio * 1.01
-                sb.x -= overlapX2 * (1 - ratio) * 1.01
+                sa.x += overlapX2 * ratio
+                sb.x -= overlapX2 * (1 - ratio)
                 const rv = sb.vx - sa.vx
                 if (rv > 0) {
                   const imp = (1 + restitution) * rv / (1 / a.mass + 1 / b.mass)
@@ -714,14 +668,12 @@ export default function SandboxCanvas({
         let targetPos: { x: number; y: number } | null = null
 
         if (anchor) {
-          anchorPos = getPartWorldPos(anchor, (part as SpringPart).anchorOffsetX, (part as SpringPart).anchorOffsetY)
           const as = state[anchor.id]
-          if (!anchorPos) anchorPos = { x: as?.x ?? anchor.x, y: as?.y ?? anchor.y }
+          anchorPos = { x: as?.x ?? anchor.x, y: as?.y ?? anchor.y }
         }
         if (target) {
-          targetPos = getPartWorldPos(target, (part as SpringPart).targetOffsetX, (part as SpringPart).targetOffsetY)
           const ts = state[target.id]
-          if (!targetPos) targetPos = { x: ts?.x ?? target.x, y: ts?.y ?? target.y }
+          targetPos = { x: ts?.x ?? target.x, y: ts?.y ?? target.y }
         }
 
         if (anchorPos && targetPos) {
@@ -735,7 +687,7 @@ export default function SandboxCanvas({
           if (part.type === 'spring') {
             const sp = part as SpringPart
             const restLen = sp.restLength
-            if (dist > 0) {
+            if (dist > 0.001) {
               const nx = dx / dist
               const ny = dy / dist
               const extension = dist - restLen
@@ -743,29 +695,30 @@ export default function SandboxCanvas({
               const anchorState = anchor ? state[anchor.id] : null
               const targetState = target ? state[target.id] : null
 
-              let anchorVelAlongSpring = 0
-              let targetVelAlongSpring = 0
-              if (anchorState && 'vx' in anchorState) anchorVelAlongSpring = anchorState.vx * nx + anchorState.vy * ny
-              if (targetState && 'vx' in targetState) targetVelAlongSpring = targetState.vx * nx + targetState.vy * ny
-              const relVel = targetVelAlongSpring - anchorVelAlongSpring
+              const anchorIsDynamic = anchorState && anchor && !anchor.locked && (anchor.type === 'ball' || anchor.type === 'block') && draggingId !== anchor.id
+              const targetIsDynamic = targetState && target && !target.locked && (target.type === 'ball' || target.type === 'block') && draggingId !== target.id
+
+              let anchorVelN = 0
+              let targetVelN = 0
+              if (anchorIsDynamic && anchorState) {
+                anchorVelN = anchorState.vx * nx + anchorState.vy * ny
+              }
+              if (targetIsDynamic && targetState) {
+                targetVelN = targetState.vx * nx + targetState.vy * ny
+              }
+              const relVel = targetVelN - anchorVelN
 
               const forceMag = -sp.stiffness * extension - sp.damping * relVel
 
-              if (anchorState && anchor && !anchor.locked && 'vx' in anchorState && (anchor as any).mass) {
-                const ax = (forceMag / (anchor as any).mass) * nx * dt
-                const ay = (forceMag / (anchor as any).mass) * ny * dt
-                if (draggingId !== anchor.id) {
-                  anchorState.vx += ax
-                  anchorState.vy += ay
-                }
+              if (anchorIsDynamic && anchorState) {
+                const mass = (anchor as any).mass ?? 1
+                anchorState.vx += (forceMag / mass) * nx * dt
+                anchorState.vy += (forceMag / mass) * ny * dt
               }
-              if (targetState && target && !target.locked && 'vx' in targetState && (target as any).mass) {
-                const tx = (-forceMag / (target as any).mass) * nx * dt
-                const ty = (-forceMag / (target as any).mass) * ny * dt
-                if (draggingId !== target.id) {
-                  targetState.vx += tx
-                  targetState.vy += ty
-                }
+              if (targetIsDynamic && targetState) {
+                const mass = (target as any).mass ?? 1
+                targetState.vx += (-forceMag / mass) * nx * dt
+                targetState.vy += (-forceMag / mass) * ny * dt
               }
             }
           } else if (part.type === 'rope') {
@@ -845,7 +798,7 @@ export default function SandboxCanvas({
 
       onTick()
     },
-    [isRunning, parts, gravity, gravityEnabled, resolveBallRectCollision, resolveBallBallCollision, getPartWorldPos, onUpdatePart, onTick]
+    [isRunning, parts, gravity, gravityEnabled, resolveBallRectCollision, resolveBallBallCollision, onUpdatePart, onTick]
   )
 
   const render = useCallback(() => {
@@ -874,13 +827,11 @@ export default function SandboxCanvas({
 
         if (anchor) {
           const as = state[anchor.id]
-          anchorPos = getPartWorldPos(anchor, (part as SpringPart).anchorOffsetX, (part as SpringPart).anchorOffsetY)
-          if (!anchorPos) anchorPos = { x: as?.x ?? anchor.x, y: as?.y ?? anchor.y }
+          anchorPos = { x: as?.x ?? anchor.x, y: as?.y ?? anchor.y }
         }
         if (target) {
           const ts = state[target.id]
-          targetPos = getPartWorldPos(target, (part as SpringPart).targetOffsetX, (part as SpringPart).targetOffsetY)
-          if (!targetPos) targetPos = { x: ts?.x ?? target.x, y: ts?.y ?? target.y }
+          targetPos = { x: ts?.x ?? target.x, y: ts?.y ?? target.y }
         }
 
         const isSelected = selectedPartId === part.id
@@ -1080,7 +1031,7 @@ export default function SandboxCanvas({
         drawCircle(ctx, mousePosRef.current.x, mousePosRef.current.y, 12, 'rgba(255, 107, 43, 0.2)', '#ff6b2b')
       }
     }
-  }, [parts, selectedPartId, connectingFrom, getPartWorldPos])
+  }, [parts, selectedPartId, connectingFrom])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -1106,7 +1057,7 @@ export default function SandboxCanvas({
       const dt = Math.min((t - last) / 1000, 0.033)
       lastTimeRef.current = t
 
-      const subSteps = 3
+      const subSteps = 6
       for (let i = 0; i < subSteps; i++) {
         step(dt / subSteps)
       }
@@ -1135,7 +1086,6 @@ export default function SandboxCanvas({
       if (connectingFrom && clickedPart && clickedPart.id !== connectingFrom) {
         const connector = parts.find((p) => p.id === connectingFrom)
         if (connector && (connector.type === 'spring' || connector.type === 'rope')) {
-          const anchorPart = connector.anchorId ? parts.find((p) => p.id === connector.anchorId) : null
           const anyState = physicsStateRef.current
 
           if (!connector.anchorId) {
@@ -1147,15 +1097,16 @@ export default function SandboxCanvas({
               x: firstPos.x,
               y: firstPos.y,
             } as Partial<Part>)
-            onPartClick(clickedPart.id)
+            onPartClick(null)
             return
           } else if (!connector.targetId) {
+            const anchorPart = parts.find((p) => p.id === connector.anchorId)
             const anchorState = anchorPart ? (anyState[anchorPart.id] ?? { x: anchorPart.x, y: anchorPart.y }) : null
             const targetState = anyState[clickedPart.id] ?? { x: clickedPart.x, y: clickedPart.y }
             if (anchorState && targetState) {
-              const dx = targetState.x - anchorState.x
-              const dy = targetState.y - anchorState.y
-              const dist = Math.sqrt(dx * dx + dy * dy)
+              const ddx = targetState.x - anchorState.x
+              const ddy = targetState.y - anchorState.y
+              const dist = Math.sqrt(ddx * ddx + ddy * ddy)
               const updates: Partial<Part> = {
                 targetId: clickedPart.id,
                 targetOffsetX: 0,
@@ -1208,7 +1159,7 @@ export default function SandboxCanvas({
         onPartClick(null)
       }
     },
-    [parts, getCanvasCoords, hitTest, connectingFrom, onPartClick, onConnectorLink, onUpdatePart, onEndConnecting]
+    [parts, getCanvasCoords, hitTest, connectingFrom, onPartClick, onUpdatePart, onEndConnecting]
   )
 
   const handleMouseMove = useCallback(

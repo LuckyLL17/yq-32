@@ -49,7 +49,6 @@ export default function Sandbox() {
     gravityEnabled,
     isRunning,
     connectingFrom,
-    connectingType,
     addPart,
     removePart,
     updatePart,
@@ -62,7 +61,6 @@ export default function Sandbox() {
     resetTime,
     startConnecting,
     endConnecting,
-    connectParts,
   } = useSandboxStore()
 
   useEffect(() => {
@@ -104,25 +102,12 @@ export default function Sandbox() {
 
   const handlePartClick = useCallback(
     (id: string | null) => {
-      if (connectingFrom && id && id !== connectingFrom) {
-        const connector = parts.find((p) => p.id === connectingFrom)
-        if (connector && (connector.type === 'spring' || connector.type === 'rope')) {
-          if (!connector.anchorId) {
-            connectParts(connectingFrom, id, '')
-            return
-          } else if (!connector.targetId) {
-            updatePart(connectingFrom, { targetId: id } as Partial<Part>)
-            endConnecting()
-            return
-          }
-        }
-      }
       setSelectedPartId(id)
       if (connectingFrom && !id) {
         endConnecting()
       }
     },
-    [connectingFrom, parts, connectParts, updatePart, endConnecting, setSelectedPartId]
+    [connectingFrom, endConnecting, setSelectedPartId]
   )
 
   const handlePartDrag = useCallback(
@@ -130,23 +115,6 @@ export default function Sandbox() {
       updatePart(id, { x, y } as Partial<Part>)
     },
     [updatePart]
-  )
-
-  const handleConnectorLink = useCallback(
-    (connectorId: string, targetId: string) => {
-      const connector = parts.find((p) => p.id === connectorId)
-      if (!connector) return
-      if (connector.type === 'spring' || connector.type === 'rope') {
-        if (!connector.anchorId) {
-          connectParts(connectorId, targetId, '')
-          startConnecting(connectorId, connector.type)
-        } else if (!connector.targetId) {
-          updatePart(connectorId, { targetId } as Partial<Part>)
-          endConnecting()
-        }
-      }
-    },
-    [parts, connectParts, startConnecting, updatePart, endConnecting]
   )
 
   const handleUpdatePart = useCallback(
@@ -311,11 +279,9 @@ export default function Sandbox() {
             isRunning={isRunning}
             selectedPartId={selectedPartId}
             connectingFrom={connectingFrom}
-            connectingType={connectingType}
             onPartClick={handlePartClick}
             onPartDrag={handlePartDrag}
             onDropPart={handleDropPart}
-            onConnectorLink={handleConnectorLink}
             onUpdatePart={handleUpdatePart}
             onEndConnecting={endConnecting}
             onTick={handleTick}
