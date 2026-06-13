@@ -25,10 +25,10 @@ export class ReactionEngine implements ExperimentEngine {
   private lastReactionTime = 0
   private rateHistory: { x: number; y: number }[] = []
 
-  init(canvas: HTMLCanvasElement, params: Record<string, number>): void {
+  init(canvas: HTMLCanvasElement, params: Record<string, number>, width?: number, height?: number): void {
     this.ctx = canvas.getContext('2d')!
-    this.width = canvas.width
-    this.height = canvas.height
+    this.width = width ?? canvas.width
+    this.height = height ?? canvas.height
     this.params = { ...params }
     this.reactionCount = 0
     this.reactionRate = 0

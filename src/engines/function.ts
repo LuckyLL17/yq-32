@@ -23,10 +23,10 @@ export class FunctionEngine implements ExperimentEngine {
   private yIntersect: { x: number; y: number } = { x: 0, y: 0 }
   private discriminant: number = 0
 
-  init(canvas: HTMLCanvasElement, params: Record<string, number>): void {
+  init(canvas: HTMLCanvasElement, params: Record<string, number>, width?: number, height?: number): void {
     this.ctx = canvas.getContext('2d')!
-    this.width = canvas.width
-    this.height = canvas.height
+    this.width = width ?? canvas.width
+    this.height = height ?? canvas.height
     this.originX = this.width / 2
     this.originY = this.height / 2
     this.params = { ...params }

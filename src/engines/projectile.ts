@@ -22,19 +22,19 @@ export class ProjectileEngine implements ExperimentEngine {
   private get launchX() { return 100 }
   private get launchY() { return this.height - 50 }
 
-  init(canvas: HTMLCanvasElement, params: Record<string, number>): void {
+  init(canvas: HTMLCanvasElement, params: Record<string, number>, width?: number, height?: number): void {
     this.ctx = canvas.getContext('2d')!
-    this.width = canvas.width
-    this.height = canvas.height
+    this.width = width ?? canvas.width
+    this.height = height ?? canvas.height
     this.params = { ...params }
     this.time = 0
     this.trail = []
     this.isLaunched = false
     const v0 = params.velocity ?? 20
-    const angle = (params.angle ?? 45) * Math.PI / 180
+    const angleDeg = params.angle ?? 45
     const g = params.gravity ?? 9.8
-    const maxH = projectileMaxHeight(v0, angle, g)
-    const range = projectileRange(v0, angle, g)
+    const maxH = projectileMaxHeight(v0, angleDeg, g)
+    const range = projectileRange(v0, angleDeg, g)
     this.maxHeightPoint = { x: this.launchX + (range / 2) * SCALE, y: this.launchY - maxH * SCALE }
     this.rangePoint = { x: this.launchX + range * SCALE, y: this.launchY }
     this.currentPos = { x: this.launchX, y: this.launchY }
@@ -43,11 +43,11 @@ export class ProjectileEngine implements ExperimentEngine {
   update(dt: number, params: Record<string, number>): void {
     this.params = { ...params }
     const v0 = params.velocity ?? 20
-    const angle = (params.angle ?? 45) * Math.PI / 180
+    const angleDeg = params.angle ?? 45
     const g = params.gravity ?? 9.8
 
     if (!this.isLaunched && !this.isDragging) {
-      const pos = projectilePosition(v0, angle, g, this.time)
+      const pos = projectilePosition(v0, angleDeg, g, this.time)
       this.currentPos = {
         x: this.launchX + pos.x * SCALE,
         y: this.launchY - pos.y * SCALE,
@@ -62,8 +62,8 @@ export class ProjectileEngine implements ExperimentEngine {
       this.time += dt
     }
 
-    const maxH = projectileMaxHeight(v0, angle, g)
-    const range = projectileRange(v0, angle, g)
+    const maxH = projectileMaxHeight(v0, angleDeg, g)
+    const range = projectileRange(v0, angleDeg, g)
     this.maxHeightPoint = { x: this.launchX + (range / 2) * SCALE, y: this.launchY - maxH * SCALE }
     this.rangePoint = { x: this.launchX + range * SCALE, y: this.launchY }
   }
@@ -73,7 +73,9 @@ export class ProjectileEngine implements ExperimentEngine {
     const ctx = this.ctx
     const { width, height } = this
     const v0 = this.params.velocity ?? 20
-    const angle = (this.params.angle ?? 45) * Math.PI / 180
+    const angleDeg = this.params.angle ?? 45
+    const angleRad = angleDeg * Math.PI / 180
+    const g = this.params.gravity ?? 9.8
 
     clearCanvas(ctx, width, height)
     drawGrid(ctx, width, height)
@@ -88,10 +90,10 @@ export class ProjectileEngine implements ExperimentEngine {
     ctx.lineTo(width, groundY)
     ctx.stroke()
 
-    this.renderLauncher(ctx, v0, angle)
+    this.renderLauncher(ctx, v0, angleRad)
 
     drawLine(ctx, [this.maxHeightPoint, { x: this.maxHeightPoint.x, y: groundY }], 'rgba(251, 191, 36, 0.3)', 1)
-    drawText(ctx, `H = ${projectileMaxHeight(v0, angle, this.params.gravity ?? 9.8).toFixed(1)}m`, this.maxHeightPoint.x + 6, this.maxHeightPoint.y - 6, '#fbbf24', 12)
+    drawText(ctx, `H = ${projectileMaxHeight(v0, angleDeg, g).toFixed(1)}m`, this.maxHeightPoint.x + 6, this.maxHeightPoint.y - 6, '#fbbf24', 12)
 
     if (this.trail.length > 1) {
       drawTrail(ctx, this.trail, TRAIL_COLOR, 0.9)
@@ -99,12 +101,12 @@ export class ProjectileEngine implements ExperimentEngine {
 
     drawCircle(ctx, this.currentPos.x, this.currentPos.y, 10, LAUNCH_COLOR, '#fff', LAUNCH_COLOR)
 
-    const range = projectileRange(v0, angle, this.params.gravity ?? 9.8)
+    const range = projectileRange(v0, angleDeg, g)
     drawText(ctx, `R = ${range.toFixed(1)}m`, this.rangePoint.x, groundY + 24, '#fbbf24', 12, 'center')
 
     const infoX = width - 16
     drawText(ctx, `速度: ${v0.toFixed(1)} m/s`, infoX, 20, '#e2e8f0', 13, 'right')
-    drawText(ctx, `角度: ${this.params.angle ?? 45}°`, infoX, 40, '#e2e8f0', 13, 'right')
+    drawText(ctx, `角度: ${angleDeg}°`, infoX, 40, '#e2e8f0', 13, 'right')
     drawText(ctx, `高度: ${((this.launchY - this.currentPos.y) / SCALE).toFixed(1)} m`, infoX, 60, '#34d399', 13, 'right')
     drawText(ctx, `时间: ${this.time.toFixed(2)} s`, infoX, 80, '#00f0ff', 13, 'right')
   }

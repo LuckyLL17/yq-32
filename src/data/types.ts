@@ -68,7 +68,7 @@ export interface EngineData {
 }
 
 export interface ExperimentEngine {
-  init(canvas: HTMLCanvasElement, params: Record<string, number>): void
+  init(canvas: HTMLCanvasElement, params: Record<string, number>, width?: number, height?: number): void
   update(dt: number, params: Record<string, number>): void
   render(): void
   handleDrag(event: DragEvent): DragResult

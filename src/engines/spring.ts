@@ -13,10 +13,10 @@ export class SpringEngine implements ExperimentEngine {
   private isDragging = false
   private params: Record<string, number> = {}
 
-  init(canvas: HTMLCanvasElement, params: Record<string, number>): void {
+  init(canvas: HTMLCanvasElement, params: Record<string, number>, width?: number, height?: number): void {
     this.ctx = canvas.getContext('2d')
-    this.width = canvas.width
-    this.height = canvas.height
+    this.width = width ?? canvas.width
+    this.height = height ?? canvas.height
     this.params = params
     this.time = 0
     this.currentDisplacement = params.displacement ?? 1

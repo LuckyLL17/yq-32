@@ -35,7 +35,7 @@ export default function ExperimentCanvas({
     if (!isDraggingRef.current) {
       const canvas = canvasRef.current
       if (canvas) {
-        engineRef.current.init(canvas, params)
+        engineRef.current.init(canvas, params, canvas.clientWidth, canvas.clientHeight)
       }
     }
   }, [params])
@@ -64,7 +64,7 @@ export default function ExperimentCanvas({
       if (ctx) {
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
       }
-      engineRef.current.init(canvas, paramsRef.current)
+      engineRef.current.init(canvas, paramsRef.current, rect.width, rect.height)
     }
 
     resizeCanvas()

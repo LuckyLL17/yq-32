@@ -17,14 +17,25 @@ export class WaveEngine implements ExperimentEngine {
   private get barrierX() { return this.width * 0.35 }
   private get centerY() { return this.height / 2 }
 
-  init(canvas: HTMLCanvasElement, params: Record<string, number>): void {
+  init(canvas: HTMLCanvasElement, params: Record<string, number>, width?: number, height?: number): void {
     this.ctx = canvas.getContext('2d')!
-    this.width = canvas.width
-    this.height = canvas.height
+    const cssW = width ?? canvas.width
+    const cssH = height ?? canvas.height
+    this.width = cssW
+    this.height = cssH
     this.params = { ...params }
-    this.halfW = Math.floor(this.width / 2)
-    this.imageData = this.ctx.createImageData(this.halfW, this.height)
+    const scaleX = canvas.width / cssW
+    const scaleY = canvas.height / cssH
+    this.halfW = Math.floor(cssW / 2)
+    this._imgDataWidth = Math.floor(this.halfW * scaleX)
+    this._imgDataHeight = Math.floor(cssH * scaleY)
+    this.imageData = this.ctx.createImageData(this._imgDataWidth, this._imgDataHeight)
+    this._pixelScale = { x: scaleX, y: scaleY }
   }
+
+  private _pixelScale: { x: number; y: number } = { x: 1, y: 1 }
+  private _imgDataWidth = 0
+  private _imgDataHeight = 0
 
   update(dt: number, params: Record<string, number>): void {
     this.time += dt
@@ -80,15 +91,18 @@ export class WaveEngine implements ExperimentEngine {
 
   private renderInterferencePattern(wavelength: number, slitDistance: number): void {
     if (!this.ctx || !this.imageData) return
-    const { halfW, height, barrierX: bx, centerY: cy } = this
+    const { halfW, barrierX: bx, centerY: cy } = this
     const data = this.imageData.data
     const breathe = 0.95 + 0.05 * Math.sin(this.time * 1.5)
+    const { x: scaleX, y: scaleY } = this._pixelScale
+    const imgW = this._imgDataWidth
+    const imgH = this._imgDataHeight
 
-    for (let py = 0; py < height; py++) {
-      const screenY = py - cy
-      for (let px = 0; px < halfW; px++) {
-        const screenX = px + halfW - bx
-        const idx = (py * halfW + px) * 4
+    for (let py = 0; py < imgH; py++) {
+      const screenY = (py / scaleY) - cy
+      for (let px = 0; px < imgW; px++) {
+        const screenX = (px / scaleX) + halfW - bx
+        const idx = (py * imgW + px) * 4
         if (screenX <= 0) {
           data[idx] = 10
           data[idx + 1] = 14
@@ -104,7 +118,7 @@ export class WaveEngine implements ExperimentEngine {
       }
     }
 
-    this.ctx.putImageData(this.imageData, halfW, 0)
+    this.ctx.putImageData(this.imageData, halfW * scaleX, 0)
   }
 
   private renderIntensityCurve(wavelength: number, slitDistance: number): void {

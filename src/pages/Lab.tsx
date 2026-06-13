@@ -121,10 +121,10 @@ export default function Lab() {
   }
 
   return (
-    <div className="flex min-h-screen bg-space-900">
+    <div className="flex h-screen overflow-hidden bg-space-900">
       <Sidebar />
-      <div className="flex-1 ml-16 flex">
-        <div className="flex-1 relative" data-guide-area="canvas">
+      <div className="flex-1 ml-16 flex h-full">
+        <div className="flex-1 relative overflow-hidden" data-guide-area="canvas">
           <ExperimentCanvas
             engine={engine}
             params={params}
