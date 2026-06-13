@@ -317,6 +317,7 @@ export default function Sandbox() {
             onDropPart={handleDropPart}
             onConnectorLink={handleConnectorLink}
             onUpdatePart={handleUpdatePart}
+            onEndConnecting={endConnecting}
             onTick={handleTick}
           />
         </div>
