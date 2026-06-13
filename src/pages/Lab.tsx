@@ -2,10 +2,11 @@ import { useEffect, useMemo, useCallback } from 'react'
 import { useParams } from 'react-router-dom'
 import { Play, Pause, RotateCcw, GraduationCap } from 'lucide-react'
 import { experiments } from '@/data/experiments'
-import type { ExperimentEngine, EngineData } from '@/data/types'
+import type { ExperimentEngine, EngineData, Template } from '@/data/types'
 import { useExperimentStore } from '@/stores/experimentStore'
 import ExperimentCanvas from '@/components/canvas/ExperimentCanvas'
 import ParamSlider from '@/components/controls/ParamSlider'
+import TemplateSelector from '@/components/controls/TemplateSelector'
 import FormulaDisplay from '@/components/formula/FormulaDisplay'
 import DataChart from '@/components/charts/DataChart'
 import Sidebar from '@/components/layout/Sidebar'
@@ -32,6 +33,8 @@ export default function Lab() {
     isRunning,
     chartData,
     guideVisible,
+    savedTemplates,
+    selectedTemplateId,
     setCurrentExperiment,
     setParam,
     setParams,
@@ -41,6 +44,9 @@ export default function Lab() {
     resetParams,
     resetAll,
     showGuide,
+    applyTemplate,
+    saveTemplate,
+    deleteSavedTemplate,
   } = useExperimentStore()
 
   const engine = useMemo<ExperimentEngine | null>(() => {
@@ -175,9 +181,27 @@ export default function Lab() {
           </div>
 
           <div className="glass-panel rounded-xl p-5 space-y-5" data-guide-area="params">
-            <h3 className="text-sm font-orbitron tracking-wider" style={{ color: 'var(--color-neon-cyan)' }}>
-              参数调节
-            </h3>
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-sm font-orbitron tracking-wider" style={{ color: 'var(--color-neon-cyan)' }}>
+                参数调节
+              </h3>
+            </div>
+            {config.templates && config.templates.length > 0 && (
+              <TemplateSelector
+                builtInTemplates={config.templates}
+                savedTemplates={savedTemplates.filter((t) => t.experimentId === experimentId)}
+                selectedTemplateId={selectedTemplateId}
+                onSelectTemplate={(template: Template) => {
+                  applyTemplate(template.params, template.id)
+                }}
+                onSaveTemplate={(name) => {
+                  if (experimentId) {
+                    saveTemplate(name, experimentId, params)
+                  }
+                }}
+                onDeleteSavedTemplate={deleteSavedTemplate}
+              />
+            )}
             {config.params.map((p) => (
               <ParamSlider
                 key={p.key}

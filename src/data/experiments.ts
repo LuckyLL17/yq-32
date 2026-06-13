@@ -55,6 +55,14 @@ export const experiments: ExperimentConfig[] = [
       { key: 'displacement', label: '初始位移', defaultValue: 1, min: -2, max: 2, step: 0.1, unit: 'm' },
     ],
     formula: 'x(t) = A \\cos(\\omega t + \\varphi)',
+    templates: [
+      { id: 'spring-classic-1', name: '无阻尼理想谐振', category: 'classic', params: { mass: 1, stiffness: 20, damping: 0, displacement: 1 } },
+      { id: 'spring-classic-2', name: '轻质量高频振动', category: 'classic', params: { mass: 0.2, stiffness: 50, damping: 0.05, displacement: 0.5 } },
+      { id: 'spring-extreme-1', name: '过阻尼临界状态', category: 'extreme', params: { mass: 1, stiffness: 10, damping: 2, displacement: 2 } },
+      { id: 'spring-extreme-2', name: '超软弹簧大振幅', category: 'extreme', params: { mass: 3, stiffness: 2, damping: 0.1, displacement: 2 } },
+      { id: 'spring-counter-1', name: '零质量极限振荡', category: 'counterintuitive', params: { mass: 0.1, stiffness: 100, damping: 0, displacement: 0.5 } },
+      { id: 'spring-counter-2', name: '负位移初始条件', category: 'counterintuitive', params: { mass: 1.5, stiffness: 30, damping: 0.2, displacement: -1.5 } },
+    ],
   },
   {
     experiment: {
@@ -109,6 +117,14 @@ export const experiments: ExperimentConfig[] = [
       { key: 'gravity', label: '重力加速度', defaultValue: 9.8, min: 1, max: 20, step: 0.1, unit: 'm/s²' },
     ],
     formula: 'y = x\\tan\\theta - \\frac{gx^2}{2v_0^2\\cos^2\\theta}',
+    templates: [
+      { id: 'projectile-classic-1', name: '月球重力射击', category: 'classic', params: { velocity: 20, angle: 45, gravity: 1.62 } },
+      { id: 'projectile-classic-2', name: '45度最远射程', category: 'classic', params: { velocity: 30, angle: 45, gravity: 9.8 } },
+      { id: 'projectile-extreme-1', name: '超音速抛射', category: 'extreme', params: { velocity: 50, angle: 30, gravity: 9.8 } },
+      { id: 'projectile-extreme-2', name: '木星重力环境', category: 'extreme', params: { velocity: 20, angle: 45, gravity: 20 } },
+      { id: 'projectile-counter-1', name: '90度垂直上抛', category: 'counterintuitive', params: { velocity: 25, angle: 90, gravity: 9.8 } },
+      { id: 'projectile-counter-2', name: '0度水平射出', category: 'counterintuitive', params: { velocity: 40, angle: 0, gravity: 9.8 } },
+    ],
   },
   {
     experiment: {
@@ -164,6 +180,14 @@ export const experiments: ExperimentConfig[] = [
       { key: 'frequency', label: '频率', defaultValue: 2, min: 1, max: 5, step: 0.1, unit: 'Hz' },
     ],
     formula: 'I = 4I_0 \\cos^2\\left(\\frac{\\pi d \\sin\\theta}{\\lambda}\\right)',
+    templates: [
+      { id: 'wave-classic-1', name: '标准双缝干涉', category: 'classic', params: { wavelength: 50, slitDistance: 150, amplitude: 40, frequency: 2 } },
+      { id: 'wave-classic-2', name: '红光长波干涉', category: 'classic', params: { wavelength: 80, slitDistance: 200, amplitude: 50, frequency: 1.5 } },
+      { id: 'wave-extreme-1', name: '极窄缝距密集条纹', category: 'extreme', params: { wavelength: 20, slitDistance: 300, amplitude: 60, frequency: 3 } },
+      { id: 'wave-extreme-2', name: '超大振幅强干涉', category: 'extreme', params: { wavelength: 60, slitDistance: 100, amplitude: 80, frequency: 2.5 } },
+      { id: 'wave-counter-1', name: '极宽缝距弱干涉', category: 'counterintuitive', params: { wavelength: 30, slitDistance: 50, amplitude: 30, frequency: 1 } },
+      { id: 'wave-counter-2', name: '超短波细微条纹', category: 'counterintuitive', params: { wavelength: 10, slitDistance: 250, amplitude: 50, frequency: 4 } },
+    ],
   },
   {
     experiment: {
@@ -218,6 +242,14 @@ export const experiments: ExperimentConfig[] = [
       { key: 'c', label: 'c', defaultValue: 0, min: -10, max: 10, step: 0.1, unit: '' },
     ],
     formula: 'y = ax^2 + bx + c',
+    templates: [
+      { id: 'function-classic-1', name: '标准开口向上', category: 'classic', params: { a: 1, b: 0, c: 0 } },
+      { id: 'function-classic-2', name: '顶点平移抛物线', category: 'classic', params: { a: 0.5, b: -2, c: 1 } },
+      { id: 'function-extreme-1', name: '极窄开口抛物线', category: 'extreme', params: { a: 5, b: 0, c: -5 } },
+      { id: 'function-extreme-2', name: '极大偏移顶点', category: 'extreme', params: { a: 0.2, b: 4, c: 10 } },
+      { id: 'function-counter-1', name: '倒置开口向下', category: 'counterintuitive', params: { a: -1, b: 2, c: 3 } },
+      { id: 'function-counter-2', name: '负a窄口深谷', category: 'counterintuitive', params: { a: -3, b: -1, c: -2 } },
+    ],
   },
   {
     experiment: {
@@ -273,6 +305,14 @@ export const experiments: ExperimentConfig[] = [
       { key: 'rotationY', label: '旋转角度', defaultValue: 0, min: 0, max: 360, step: 1, unit: '°' },
     ],
     formula: '\\text{键角} = \\theta, \\quad \\text{键长} = d',
+    templates: [
+      { id: 'molecule-classic-1', name: '标准水分子', category: 'classic', params: { moleculeType: 0, bondLength: 80, bondAngle: 104.5, rotationY: 0 } },
+      { id: 'molecule-classic-2', name: '甲烷正四面体', category: 'classic', params: { moleculeType: 2, bondLength: 90, bondAngle: 109.5, rotationY: 45 } },
+      { id: 'molecule-extreme-1', name: '极限小键角', category: 'extreme', params: { moleculeType: 0, bondLength: 60, bondAngle: 60, rotationY: 0 } },
+      { id: 'molecule-extreme-2', name: '超长大键长', category: 'extreme', params: { moleculeType: 1, bondLength: 150, bondAngle: 180, rotationY: 90 } },
+      { id: 'molecule-counter-1', name: '直线型水分子', category: 'counterintuitive', params: { moleculeType: 0, bondLength: 80, bondAngle: 180, rotationY: 0 } },
+      { id: 'molecule-counter-2', name: '平面甲烷构型', category: 'counterintuitive', params: { moleculeType: 2, bondLength: 100, bondAngle: 90, rotationY: 0 } },
+    ],
   },
   {
     experiment: {
@@ -328,5 +368,13 @@ export const experiments: ExperimentConfig[] = [
       { key: 'activationEnergy', label: '活化能', defaultValue: 50, min: 10, max: 100, step: 1, unit: 'kJ/mol' },
     ],
     formula: 'v = k [A]^m [B]^n, \\quad k = A e^{-\\frac{E_a}{RT}}',
+    templates: [
+      { id: 'reaction-classic-1', name: '室温标准反应', category: 'classic', params: { concentrationA: 20, concentrationB: 20, temperature: 300, activationEnergy: 50 } },
+      { id: 'reaction-classic-2', name: '等浓度基准反应', category: 'classic', params: { concentrationA: 25, concentrationB: 25, temperature: 298, activationEnergy: 40 } },
+      { id: 'reaction-extreme-1', name: '超高温快速反应', category: 'extreme', params: { concentrationA: 30, concentrationB: 30, temperature: 500, activationEnergy: 80 } },
+      { id: 'reaction-extreme-2', name: '高浓度饱和反应', category: 'extreme', params: { concentrationA: 50, concentrationB: 50, temperature: 300, activationEnergy: 30 } },
+      { id: 'reaction-counter-1', name: '低温高活化能', category: 'counterintuitive', params: { concentrationA: 20, concentrationB: 20, temperature: 200, activationEnergy: 100 } },
+      { id: 'reaction-counter-2', name: '浓度悬殊配比', category: 'counterintuitive', params: { concentrationA: 50, concentrationB: 5, temperature: 300, activationEnergy: 50 } },
+    ],
   },
 ]

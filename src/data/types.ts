@@ -29,10 +29,25 @@ export interface ParamConfig {
   unit: string
 }
 
+export type TemplateCategory = 'classic' | 'extreme' | 'counterintuitive'
+
+export interface Template {
+  id: string
+  name: string
+  category: TemplateCategory
+  params: Record<string, number>
+}
+
+export interface SavedTemplate extends Template {
+  experimentId: string
+  createdAt: number
+}
+
 export interface ExperimentConfig {
   experiment: Experiment
   params: ParamConfig[]
   formula: string
+  templates: Template[]
 }
 
 export interface DragEvent {
