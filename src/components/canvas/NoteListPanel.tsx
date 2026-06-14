@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { FolderPlus, Trash, ChevronDown, ChevronUp, X, Plus, Check, Edit3 } from 'lucide-react'
 import type { SavedNote, Annotation } from '@/data/types'
-import { loadSavedNotes, saveNotesList, createNote, updateNoteInList } from './BrushOverlay'
+import { loadSavedNotes, saveNotesList, createNote, updateNoteInList, formatNoteTime } from '@/utils/brushNotes'
 
 interface NoteListPanelProps {
   experimentId: string
@@ -10,12 +10,6 @@ interface NoteListPanelProps {
   currentAnnotations: Annotation[]
   onLoadNote: (note: SavedNote) => void
   onNotesChange?: (notes: SavedNote[]) => void
-}
-
-function formatTime(ts: number): string {
-  const d = new Date(ts)
-  const pad = (n: number) => n.toString().padStart(2, '0')
-  return `${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
 export default function NoteListPanel({
