@@ -1,13 +1,18 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Users, Loader2 } from 'lucide-react';
 import Layout from '@/components/layout/Layout';
 import CategoryCard from '@/components/CategoryCard';
 import ExperimentCard from '@/components/ExperimentCard';
 import { experiments } from '@/data/experiments';
+import { useCollabStore } from '@/stores/collabStore';
 
 export default function Home() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const navigate = useNavigate();
+  const [roomInput, setRoomInput] = useState('');
+  const [joiningRoom, setJoiningRoom] = useState(false);
+  const { joinRoom, joinError, setJoinError } = useCollabStore();
 
   const physicsCount = experiments.filter((e) => e.experiment.category === 'physics').length;
   const mathCount = experiments.filter((e) => e.experiment.category === 'math').length;
@@ -122,13 +127,61 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="animate-slide-up flex flex-wrap gap-4 justify-center" style={{ animationDelay: '0.5s', animationFillMode: 'both' }}>
+          <div className="animate-slide-up flex flex-wrap gap-4 justify-center mb-6" style={{ animationDelay: '0.5s', animationFillMode: 'both' }}>
             <button className="neon-btn" onClick={() => navigate('/library')}>
               开始探索
             </button>
             <button className="neon-btn neon-btn-orange" onClick={() => navigate('/sandbox')}>
               🧪 自由沙盒
             </button>
+          </div>
+
+          <div className="animate-slide-up w-full max-w-md" style={{ animationDelay: '0.7s', animationFillMode: 'both' }}>
+            <div className="glass-panel rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Users className="w-5 h-5 text-neon-cyan" />
+                <span className="text-sm font-medium text-slate-300">加入好友的实验</span>
+              </div>
+              <div className="flex gap-3">
+                <input
+                  type="text"
+                  maxLength={6}
+                  placeholder="输入6位房间号"
+                  value={roomInput}
+                  onChange={(e) => {
+                    setRoomInput(e.target.value.replace(/\D/g, ''));
+                    setJoinError(null);
+                  }}
+                  className="flex-1 bg-space-800/50 border border-neon-cyan/30 rounded-lg px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan/50 transition-all font-orbitron text-center text-lg tracking-widest"
+                />
+                <button
+                  onClick={async () => {
+                    if (!roomInput || roomInput.length !== 6) {
+                      setJoinError('请输入有效的6位房间号');
+                      return;
+                    }
+                    setJoiningRoom(true);
+                    const result = await joinRoom(roomInput);
+                    setJoiningRoom(false);
+                    if (result) {
+                      navigate(`/lab/${result.experimentId}`);
+                    }
+                  }}
+                  disabled={joiningRoom || roomInput.length !== 6}
+                  className="neon-btn neon-btn-green px-6 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {joiningRoom ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Users className="w-4 h-4" />
+                  )}
+                  加入
+                </button>
+              </div>
+              {joinError && (
+                <p className="mt-2 text-sm text-red-400 animate-pulse">{joinError}</p>
+              )}
+            </div>
           </div>
         </div>
       </section>

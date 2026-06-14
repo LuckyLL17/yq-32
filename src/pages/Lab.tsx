@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useCallback, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { Play, Pause, RotateCcw, GraduationCap, Paintbrush } from 'lucide-react'
+import { Play, Pause, RotateCcw, GraduationCap, Paintbrush, Users } from 'lucide-react'
 import { experiments } from '@/data/experiments'
 import type { ExperimentEngine, EngineData, Template } from '@/data/types'
 import { useExperimentStore } from '@/stores/experimentStore'
+import { useCollabStore } from '@/stores/collabStore'
 import ExperimentCanvas from '@/components/canvas/ExperimentCanvas'
 import ParamSlider from '@/components/controls/ParamSlider'
 import TemplateSelector from '@/components/controls/TemplateSelector'
@@ -16,6 +17,7 @@ import MeasurementPanel from '@/components/canvas/MeasurementPanel'
 import MeasurementOverlay from '@/components/canvas/MeasurementOverlay'
 import ScanExplore, { type ScanResult } from '@/components/controls/ScanExplore'
 import HeatmapDrawer from '@/components/controls/HeatmapDrawer'
+import { InviteModal, CollabCursors, CollabIndicator } from '@/components/collab'
 import type { Annotation } from '@/data/types'
 import { SpringEngine } from '@/engines/spring'
 import { ProjectileEngine } from '@/engines/projectile'
@@ -40,6 +42,15 @@ export default function Lab() {
   const annotationsRef = useRef<Annotation[]>([])
   const [scanResult, setScanResult] = useState<ScanResult | null>(null)
   const [heatmapOpen, setHeatmapOpen] = useState(false)
+  const [inviteModalOpen, setInviteModalOpen] = useState(false)
+
+  const {
+    isConnected: isCollabConnected,
+    roomState,
+    generateAndJoinRoom,
+    leaveRoom,
+    sendParamsBatch,
+  } = useCollabStore()
 
   useEffect(() => {
     hasUnsavedChangesRef.current = hasUnsavedChanges
@@ -96,14 +107,44 @@ export default function Lab() {
   useEffect(() => {
     if (!config) return
     setCurrentExperiment(config.experiment.id)
-    const defaultParams: Record<string, number> = {}
-    config.params.forEach((p) => {
-      defaultParams[p.key] = p.defaultValue
-    })
-    setParams(defaultParams)
+
+    if (isCollabConnected && roomState?.params) {
+      setParams(roomState.params)
+    } else {
+      const defaultParams: Record<string, number> = {}
+      config.params.forEach((p) => {
+        defaultParams[p.key] = p.defaultValue
+      })
+      setParams(defaultParams)
+    }
+
     setIsRunning(true)
     clearChartData()
-  }, [config, setCurrentExperiment, setParams, setIsRunning, clearChartData])
+  }, [config, setCurrentExperiment, setParams, setIsRunning, clearChartData, isCollabConnected, roomState])
+
+  useEffect(() => {
+    if (isCollabConnected && roomState?.params) {
+      setParams(roomState.params)
+    }
+  }, [isCollabConnected, roomState?.params, setParams])
+
+  const handleInviteClick = () => {
+    if (!isCollabConnected && experimentId && config) {
+      const defaultParams: Record<string, number> = {}
+      config.params.forEach((p) => {
+        defaultParams[p.key] = params[p.key] ?? p.defaultValue
+      })
+      generateAndJoinRoom(experimentId, defaultParams)
+    }
+    setInviteModalOpen(true)
+  }
+
+  const handleLocalParamsChange = useCallback((newParams: Record<string, number>) => {
+    setParams(newParams)
+    if (isCollabConnected) {
+      sendParamsBatch(newParams)
+    }
+  }, [setParams, isCollabConnected, sendParamsBatch])
 
   useEffect(() => {
     return () => {
@@ -115,9 +156,12 @@ export default function Lab() {
           }
         }
       }
+      if (isCollabConnected) {
+        leaveRoom()
+      }
       resetAll()
     }
-  }, [experimentId, resetAll])
+  }, [experimentId, resetAll, isCollabConnected, leaveRoom])
 
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -159,7 +203,10 @@ export default function Lab() {
   const handleApplyHeatmapParams = useCallback((newParams: Record<string, number>) => {
     setParams(newParams)
     clearChartData()
-  }, [setParams, clearChartData])
+    if (isCollabConnected) {
+      sendParamsBatch(newParams)
+    }
+  }, [setParams, clearChartData, isCollabConnected, sendParamsBatch])
 
   if (!config || !engine) {
     return (
@@ -180,6 +227,9 @@ export default function Lab() {
   const handleReset = () => {
     resetParams(defaultParams)
     clearChartData()
+    if (isCollabConnected) {
+      sendParamsBatch(defaultParams)
+    }
   }
 
   const formulaWithValues = engine.getFormulaWithValues(params)
@@ -198,11 +248,34 @@ export default function Lab() {
           <ExperimentCanvas
             engine={engine}
             params={params}
-            onParamChange={(newParams) => setParams(newParams)}
+            onParamChange={handleLocalParamsChange}
             onDataUpdate={handleDataUpdate}
             running={isRunning}
             highlightElement={highlightElement}
           />
+
+          <CollabCursors containerRef={canvasContainerRef} />
+          <CollabIndicator />
+
+          <button
+            onClick={handleInviteClick}
+            className={`absolute top-4 right-4 z-30 glass-panel px-4 py-2 rounded-lg flex items-center gap-2 transition-all hover:scale-105 ${
+              isCollabConnected
+                ? 'bg-neon-green/20 border-neon-green/50'
+                : 'hover:bg-neon-cyan/10'
+            }`}
+            style={{
+              top: isCollabConnected ? '60px' : '16px',
+            }}
+          >
+            <Users className="w-4 h-4 text-neon-cyan" />
+            <span className="text-sm font-medium text-white">
+              {isCollabConnected ? '协作中' : '邀请好友'}
+            </span>
+            {isCollabConnected && (
+              <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" style={{ boxShadow: '0 0 8px #4ade80' }} />
+            )}
+          </button>
           <MeasurementPanel containerRef={canvasContainerRef} />
           <MeasurementOverlay containerRef={canvasContainerRef} />
           <button
@@ -285,6 +358,9 @@ export default function Lab() {
                 selectedTemplateId={selectedTemplateId}
                 onSelectTemplate={(template: Template) => {
                   applyTemplate(template.params, template.id)
+                  if (isCollabConnected) {
+                    sendParamsBatch(template.params)
+                  }
                 }}
                 onSaveTemplate={(name) => {
                   if (experimentId) {
@@ -304,6 +380,7 @@ export default function Lab() {
                 step={p.step}
                 unit={p.unit}
                 onChange={(v) => setParam(p.key, v)}
+                paramKey={p.key}
               />
             ))}
             <ScanExplore
@@ -330,6 +407,10 @@ export default function Lab() {
         onApplyParams={handleApplyHeatmapParams}
       />
       <ExperimentGuide />
+      <InviteModal
+        open={inviteModalOpen}
+        onClose={() => setInviteModalOpen(false)}
+      />
     </div>
   )
 }

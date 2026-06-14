@@ -219,3 +219,32 @@ export interface ExperimentEngine {
   destroy(): void
 }
 
+export interface Collaborator {
+  id: string
+  nickname: string
+  color: string
+  isHost: boolean
+  x: number
+  y: number
+  lastActive: number
+}
+
+export interface CollabMessage {
+  type: 'join' | 'leave' | 'cursor' | 'param-change' | 'params-batch' | 'param-drag-start' | 'param-drag-end' | 'turn-request' | 'turn-grant' | 'room-state' | 'ping' | 'pong'
+  senderId: string
+  senderNickname: string
+  timestamp: number
+  payload?: Record<string, unknown>
+}
+
+export interface RoomState {
+  roomId: string
+  experimentId: string
+  hostId: string
+  collaborators: Collaborator[]
+  currentOperatorId: string | null
+  currentParamKey: string | null
+  params: Record<string, number>
+  turnQueue: string[]
+}
+

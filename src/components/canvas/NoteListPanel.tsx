@@ -250,7 +250,7 @@ export default function NoteListPanel({
                           <div className="note-item-meta">
                             <span>{note.annotations.length} 处标注</span>
                             <span>·</span>
-                            <span>{formatTime(note.updatedAt)}</span>
+                            <span>{formatNoteTime(note.updatedAt)}</span>
                           </div>
                         </>
                       )}
