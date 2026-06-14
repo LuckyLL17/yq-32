@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { GuideStep, SavedTemplate, HighlightElementType, VoiceConfig } from '@/data/types'
+import type { GuideStep, SavedTemplate, HighlightElementType, VoiceConfig, MeasureTool, Measure } from '@/data/types'
 
 const SAVED_TEMPLATES_KEY = 'lab_saved_templates'
 
@@ -61,6 +61,19 @@ interface ExperimentState {
   saveTemplate: (name: string, experimentId: string, params: Record<string, number>) => void
   deleteSavedTemplate: (templateId: string) => void
   setSelectedTemplateId: (id: string | null) => void
+
+  measureTool: MeasureTool
+  setMeasureTool: (tool: MeasureTool) => void
+
+  measureColor: string
+  setMeasureColor: (color: string) => void
+
+  measures: Measure[]
+  addMeasure: (measure: Measure) => void
+  removeMeasure: (id: string) => void
+  togglePinMeasure: (id: string) => void
+  clearMeasures: () => void
+  updateMeasure: (id: string, updates: Partial<Measure>) => void
 }
 
 export const useExperimentStore = create<ExperimentState>((set, get) => ({
@@ -83,6 +96,9 @@ export const useExperimentStore = create<ExperimentState>((set, get) => ({
     volume: 1,
     voiceName: '',
   },
+  measureTool: 'none',
+  measureColor: '#00f0ff',
+  measures: [],
 
   setCurrentExperiment: (id) => set({ currentExperimentId: id, selectedTemplateId: null }),
   setParam: (key, value) => set((state) => ({ params: { ...state.params, [key]: value }, selectedTemplateId: null })),
@@ -101,6 +117,9 @@ export const useExperimentStore = create<ExperimentState>((set, get) => ({
     highlightElement: null,
     isSpeaking: false,
     speakingSegmentIndex: -1,
+    measureTool: 'none',
+    measureColor: '#00f0ff',
+    measures: [],
   }),
   showGuide: (guide) => set({ guideVisible: true, currentGuideStep: 0, currentGuide: guide }),
   hideGuide: () => set({ guideVisible: false, currentGuideStep: 0, currentGuide: null }),
@@ -146,4 +165,19 @@ export const useExperimentStore = create<ExperimentState>((set, get) => ({
   })),
   setIsSpeaking: (speaking) => set({ isSpeaking: speaking }),
   setSpeakingSegmentIndex: (index) => set({ speakingSegmentIndex: index }),
+  setMeasureTool: (tool) => set({ measureTool: tool }),
+  setMeasureColor: (color) => set({ measureColor: color }),
+  addMeasure: (measure) => set((state) => ({ measures: [...state.measures, measure] })),
+  removeMeasure: (id) => set((state) => ({ measures: state.measures.filter((m) => m.id !== id) })),
+  togglePinMeasure: (id) => set((state) => ({
+    measures: state.measures.map((m) =>
+      m.id === id ? { ...m, pinned: !m.pinned } : m
+    ),
+  })),
+  clearMeasures: () => set({ measures: [] }),
+  updateMeasure: (id, updates) => set((state) => ({
+    measures: state.measures.map((m) =>
+      m.id === id ? { ...m, ...updates } as Measure : m
+    ),
+  })),
 }))

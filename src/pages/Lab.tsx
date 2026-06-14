@@ -12,6 +12,8 @@ import DataChart from '@/components/charts/DataChart'
 import Sidebar from '@/components/layout/Sidebar'
 import ExperimentGuide from '@/components/guide/ExperimentGuide'
 import BrushOverlay, { type BrushOverlayRef, saveBrushAnnotations } from '@/components/canvas/BrushOverlay'
+import MeasurementPanel from '@/components/canvas/MeasurementPanel'
+import MeasurementOverlay from '@/components/canvas/MeasurementOverlay'
 import ScanExplore, { type ScanResult } from '@/components/controls/ScanExplore'
 import HeatmapDrawer from '@/components/controls/HeatmapDrawer'
 import type { Annotation } from '@/data/types'
@@ -32,6 +34,7 @@ export default function Lab() {
   const { experimentId } = useParams<{ experimentId: string }>()
   const config = useMemo(() => experiments.find((e) => e.experiment.id === experimentId), [experimentId])
   const brushOverlayRef = useRef<BrushOverlayRef>(null)
+  const canvasContainerRef = useRef<HTMLDivElement>(null)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const hasUnsavedChangesRef = useRef(false)
   const annotationsRef = useRef<Annotation[]>([])
@@ -191,7 +194,7 @@ export default function Lab() {
     <div className="flex h-screen overflow-hidden bg-space-900">
       <Sidebar />
       <div className="flex-1 ml-16 flex h-full">
-        <div className="flex-1 relative overflow-hidden" data-guide-area="canvas">
+        <div ref={canvasContainerRef} className="flex-1 relative overflow-hidden" data-guide-area="canvas">
           <ExperimentCanvas
             engine={engine}
             params={params}
@@ -200,6 +203,8 @@ export default function Lab() {
             running={isRunning}
             highlightElement={highlightElement}
           />
+          <MeasurementPanel containerRef={canvasContainerRef} />
+          <MeasurementOverlay containerRef={canvasContainerRef} />
           <button
             onClick={handleBrushModeToggle}
             className={`brush-mode-toggle ${brushMode ? 'active' : ''} ${hasUnsavedChanges ? 'has-unsaved' : ''}`}
@@ -222,6 +227,7 @@ export default function Lab() {
             <button
               onClick={handleStartGuide}
               className="guide-start-btn absolute top-4 left-4 z-10"
+              style={{ top: 'auto', bottom: '16px', left: '50%', transform: 'translateX(-50%)' }}
             >
               <GraduationCap className="w-4 h-4" />
               开始实验引导

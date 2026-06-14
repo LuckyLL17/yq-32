@@ -161,6 +161,44 @@ export type Annotation = StrokeAnnotation | ArrowAnnotation | CircleAnnotation |
 export type BrushTool = 'pen' | 'eraser' | 'arrow' | 'circle' | 'text'
 export type PenColor = '#ef4444' | '#eab308' | '#3b82f6'
 
+export type MeasureTool = 'none' | 'coordinate' | 'distance' | 'angle'
+
+export interface Point {
+  x: number
+  y: number
+}
+
+export interface CoordinateMeasure {
+  id: string
+  type: 'coordinate'
+  point: Point
+  pinned: boolean
+  color: string
+}
+
+export interface DistanceMeasure {
+  id: string
+  type: 'distance'
+  from: Point
+  to: Point
+  distance: number
+  pinned: boolean
+  color: string
+}
+
+export interface AngleMeasure {
+  id: string
+  type: 'angle'
+  vertex: Point
+  point1: Point
+  point2: Point
+  angle: number
+  pinned: boolean
+  color: string
+}
+
+export type Measure = CoordinateMeasure | DistanceMeasure | AngleMeasure
+
 export interface ExperimentEngine {
   init(canvas: HTMLCanvasElement, params: Record<string, number>, width?: number, height?: number): void
   update(dt: number, params: Record<string, number>): void
