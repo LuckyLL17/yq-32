@@ -158,6 +158,15 @@ export interface TextAnnotation {
 
 export type Annotation = StrokeAnnotation | ArrowAnnotation | CircleAnnotation | TextAnnotation
 
+export interface SavedNote {
+  id: string
+  name: string
+  experimentId: string
+  annotations: Annotation[]
+  createdAt: number
+  updatedAt: number
+}
+
 export type BrushTool = 'pen' | 'eraser' | 'arrow' | 'circle' | 'text'
 export type PenColor = '#ef4444' | '#eab308' | '#3b82f6'
 

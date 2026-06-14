@@ -766,6 +766,320 @@ body {
   }
 }
 
+.brush-note-panel-container {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 25;
+  width: 280px;
+  max-width: calc(100% - 24px);
+}
+
+.note-list-panel {
+  background: rgba(10, 14, 23, 0.92);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), 0 0 12px rgba(168, 85, 247, 0.1);
+  animation: note-panel-in 0.25s ease-out;
+}
+
+@keyframes note-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.note-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: rgba(168, 85, 247, 0.08);
+  border-bottom: 1px solid rgba(168, 85, 247, 0.15);
+  color: #cbd5e1;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s ease;
+}
+
+.note-list-header:hover {
+  background: rgba(168, 85, 247, 0.14);
+}
+
+.note-header-btn {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: 1px solid rgba(168, 85, 247, 0.25);
+  background: transparent;
+  color: var(--color-neon-purple);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.note-header-btn:hover {
+  background: rgba(168, 85, 247, 0.15);
+  border-color: rgba(168, 85, 247, 0.6);
+}
+
+.note-header-btn.update {
+  border-color: rgba(0, 240, 255, 0.25);
+  color: var(--color-neon-cyan);
+}
+
+.note-header-btn.update:hover {
+  background: rgba(0, 240, 255, 0.12);
+  border-color: rgba(0, 240, 255, 0.6);
+}
+
+.note-list-body {
+  max-height: 340px;
+  overflow-y: auto;
+  padding: 10px;
+  color: #e2e8f0;
+}
+
+.note-list-body::-webkit-scrollbar {
+  width: 5px;
+}
+
+.note-list-body::-webkit-scrollbar-thumb {
+  background: rgba(168, 85, 247, 0.3);
+  border-radius: 3px;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.18s ease-out;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; max-height: 0; }
+  to { opacity: 1; max-height: 340px; }
+}
+
+.note-save-dialog {
+  margin-bottom: 10px;
+  padding: 10px;
+  background: rgba(0, 240, 255, 0.05);
+  border: 1px solid rgba(0, 240, 255, 0.2);
+  border-radius: 8px;
+}
+
+.note-close-btn {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.note-close-btn:hover {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+.note-name-input {
+  flex: 1;
+  background: rgba(10, 14, 23, 0.6);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  border-radius: 6px;
+  color: #e2e8f0;
+  font-size: 12px;
+  padding: 6px 10px;
+  outline: none;
+  font-family: 'IBM Plex Sans', sans-serif;
+}
+
+.note-name-input:focus {
+  border-color: var(--color-neon-cyan);
+  box-shadow: 0 0 6px rgba(0, 240, 255, 0.2);
+}
+
+.note-name-input::placeholder {
+  color: #64748b;
+}
+
+.note-action-btn {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.note-action-btn.save {
+  color: var(--color-neon-green);
+  border-color: rgba(15, 155, 88, 0.35);
+  background: rgba(15, 155, 88, 0.1);
+}
+
+.note-action-btn.save:hover:not(:disabled) {
+  background: rgba(15, 155, 88, 0.18);
+  border-color: rgba(15, 155, 88, 0.6);
+}
+
+.note-action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.note-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  color: #64748b;
+  text-align: center;
+}
+
+.note-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.note-item {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  border-radius: 8px;
+  background: rgba(30, 41, 59, 0.3);
+  transition: all 0.2s ease;
+}
+
+.note-item:hover {
+  border-color: rgba(168, 85, 247, 0.25);
+  background: rgba(30, 41, 59, 0.55);
+}
+
+.note-item.active {
+  border-color: rgba(0, 240, 255, 0.45);
+  background: rgba(0, 240, 255, 0.06);
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.12);
+}
+
+.note-item-main {
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.note-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.note-item-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #e2e8f0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.note-item.active .note-item-name {
+  color: var(--color-neon-cyan);
+}
+
+.note-active-dot {
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--color-neon-cyan);
+  box-shadow: 0 0 6px var(--color-neon-cyan);
+}
+
+.note-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  color: #64748b;
+  font-family: 'Orbitron', monospace;
+}
+
+.note-edit-input {
+  width: 100%;
+  background: rgba(10, 14, 23, 0.6);
+  border: 1px solid rgba(0, 240, 255, 0.4);
+  border-radius: 5px;
+  color: #e2e8f0;
+  font-size: 12.5px;
+  padding: 4px 8px;
+  outline: none;
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-weight: 500;
+}
+
+.note-item-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.note-item:hover .note-item-actions {
+  opacity: 1;
+}
+
+.note-icon-btn {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  color: #94a3b8;
+  transition: all 0.2s ease;
+}
+
+.note-icon-btn.edit:hover {
+  background: rgba(0, 240, 255, 0.1);
+  border-color: rgba(0, 240, 255, 0.35);
+  color: var(--color-neon-cyan);
+}
+
+.note-icon-btn.delete:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #ef4444;
+}
+
 .scan-explore-container {
   margin-top: 8px;
   padding-top: 12px;

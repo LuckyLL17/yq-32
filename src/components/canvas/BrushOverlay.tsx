@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback, forwardRef, useImperativeHandle } from 'react'
-import { Pen, Eraser, ArrowRight, Circle, Type, Trash2, Save, Check } from 'lucide-react'
-import type { Annotation, BrushTool, PenColor, StrokeAnnotation, ArrowAnnotation, CircleAnnotation, TextAnnotation } from '@/data/types'
+import { Pen, Eraser, ArrowRight, Circle, Type, Trash2, Save, Check, NotebookPen, Plus, X, ChevronDown, ChevronUp, FolderPlus, Trash } from 'lucide-react'
+import type { Annotation, BrushTool, PenColor, StrokeAnnotation, ArrowAnnotation, CircleAnnotation, TextAnnotation, SavedNote } from '@/data/types'
+import NoteListPanel from './NoteListPanel'
 
 interface BrushOverlayProps {
   experimentId: string
@@ -39,6 +40,47 @@ export function saveBrushAnnotations(experimentId: string, annotations: Annotati
   } catch {
     // ignore
   }
+}
+
+const NOTES_STORAGE_PREFIX = 'brush_notes_'
+
+export function loadSavedNotes(experimentId: string): SavedNote[] {
+  try {
+    const stored = localStorage.getItem(NOTES_STORAGE_PREFIX + experimentId)
+    return stored ? JSON.parse(stored) : []
+  } catch {
+    return []
+  }
+}
+
+export function saveNotesList(experimentId: string, notes: SavedNote[]) {
+  try {
+    localStorage.setItem(NOTES_STORAGE_PREFIX + experimentId, JSON.stringify(notes))
+  } catch {
+    // ignore
+  }
+}
+
+export function createNote(experimentId: string, name: string, annotations: Annotation[]): SavedNote {
+  const now = Date.now()
+  return {
+    id: `note-${now}-${Math.random().toString(36).slice(2, 8)}`,
+    name,
+    experimentId,
+    annotations: JSON.parse(JSON.stringify(annotations)),
+    createdAt: now,
+    updatedAt: now,
+  }
+}
+
+export function updateNoteInList(notes: SavedNote[], noteId: string, updates: Partial<SavedNote>): SavedNote[] {
+  return notes.map((n) => (n.id === noteId ? { ...n, ...updates, updatedAt: Date.now() } : n))
+}
+
+function formatTime(ts: number): string {
+  const d = new Date(ts)
+  const pad = (n: number) => n.toString().padStart(2, '0')
+  return `${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
 function annotationsEqual(a: Annotation[], b: Annotation[]): boolean {
@@ -132,6 +174,7 @@ const BrushOverlay = forwardRef<BrushOverlayRef, BrushOverlayProps>(function Bru
   const [saveFlash, setSaveFlash] = useState(false)
   const onDirtyChangeRef = useRef(onDirtyChange)
   const onAnnotationsChangeRef = useRef(onAnnotationsChange)
+  const [noteListOpen, setNoteListOpen] = useState(false)
 
   useEffect(() => {
     onDirtyChangeRef.current = onDirtyChange
@@ -248,6 +291,26 @@ const BrushOverlay = forwardRef<BrushOverlayRef, BrushOverlayProps>(function Bru
     onDirtyChangeRef.current?.(false)
     setSaveFlash(true)
     setTimeout(() => setSaveFlash(false), 1200)
+  }, [experimentId])
+
+  const handleLoadNote = useCallback((note: SavedNote) => {
+    const noteAnnotations = note.annotations
+    setAnnotations(noteAnnotations)
+    savedAnnotationsRef.current = JSON.parse(JSON.stringify(noteAnnotations))
+    annotationsRef.current = noteAnnotations
+    hasUnsavedChangesRef.current = false
+    setHasUnsavedChanges(false)
+    onDirtyChangeRef.current?.(false)
+    onAnnotationsChangeRef.current?.(noteAnnotations)
+    const canvas = canvasRef.current
+    const container = containerRef.current
+    if (canvas && container) {
+      const rect = container.getBoundingClientRect()
+      const ctx = canvas.getContext('2d')
+      if (ctx) {
+        redrawAll(ctx, noteAnnotations, rect.width, rect.height)
+      }
+    }
   }, [experimentId])
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -490,6 +553,16 @@ const BrushOverlay = forwardRef<BrushOverlayRef, BrushOverlayProps>(function Bru
         </div>
       )}
 
+      <div className="brush-note-panel-container">
+        <NoteListPanel
+          experimentId={experimentId}
+          open={noteListOpen}
+          onToggle={() => setNoteListOpen((v) => !v)}
+          currentAnnotations={annotationsRef.current}
+          onLoadNote={handleLoadNote}
+        />
+      </div>
+
       <div className="brush-toolbar">
         <div className="brush-toolbar-inner">
           <div className="brush-tool-group">
@@ -545,6 +618,14 @@ const BrushOverlay = forwardRef<BrushOverlayRef, BrushOverlayProps>(function Bru
           )}
 
           <div className="brush-tool-group" style={{ borderLeft: '1px solid rgba(0,240,255,0.15)', paddingLeft: '8px' }}>
+            <button
+              className={`brush-tool-btn ${noteListOpen ? 'active' : ''}`}
+              onClick={() => setNoteListOpen((v) => !v)}
+              title="笔记列表"
+              style={{ color: noteListOpen ? 'var(--color-neon-purple)' : undefined }}
+            >
+              <NotebookPen className="w-4 h-4" />
+            </button>
             <button
               className="brush-tool-btn brush-clear-btn"
               onClick={handleClear}
