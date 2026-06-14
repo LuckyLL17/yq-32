@@ -1346,7 +1346,7 @@ body {
   position: absolute;
   top: 12px;
   left: 12px;
-  z-index: 30;
+  z-index: 40;
   width: 220px;
   background: rgba(10, 14, 23, 0.92);
   backdrop-filter: blur(16px);
@@ -1372,7 +1372,7 @@ body {
   position: absolute;
   top: 12px;
   left: 12px;
-  z-index: 30;
+  z-index: 40;
   display: flex;
   align-items: center;
   gap: 6px;
