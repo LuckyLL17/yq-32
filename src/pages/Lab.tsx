@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useCallback } from 'react'
 import { useParams } from 'react-router-dom'
-import { Play, Pause, RotateCcw, GraduationCap } from 'lucide-react'
+import { Play, Pause, RotateCcw, GraduationCap, Paintbrush } from 'lucide-react'
 import { experiments } from '@/data/experiments'
 import type { ExperimentEngine, EngineData, Template } from '@/data/types'
 import { useExperimentStore } from '@/stores/experimentStore'
@@ -11,6 +11,7 @@ import FormulaDisplay from '@/components/formula/FormulaDisplay'
 import DataChart from '@/components/charts/DataChart'
 import Sidebar from '@/components/layout/Sidebar'
 import ExperimentGuide from '@/components/guide/ExperimentGuide'
+import BrushOverlay from '@/components/canvas/BrushOverlay'
 import { SpringEngine } from '@/engines/spring'
 import { ProjectileEngine } from '@/engines/projectile'
 import { WaveEngine } from '@/engines/wave'
@@ -47,6 +48,8 @@ export default function Lab() {
     applyTemplate,
     saveTemplate,
     deleteSavedTemplate,
+    brushMode,
+    setBrushMode,
   } = useExperimentStore()
 
   const engine = useMemo<ExperimentEngine | null>(() => {
@@ -132,6 +135,15 @@ export default function Lab() {
             onDataUpdate={handleDataUpdate}
             running={isRunning}
           />
+          <button
+            onClick={() => setBrushMode(!brushMode)}
+            className={`brush-mode-toggle ${brushMode ? 'active' : ''}`}
+            title={brushMode ? '关闭画笔模式' : '开启画笔模式'}
+          >
+            <Paintbrush className="w-4 h-4" />
+            <span className="text-xs font-orbitron">画笔</span>
+          </button>
+          <BrushOverlay experimentId={experimentId!} active={brushMode} />
           {!guideVisible && config?.experiment.guide && (
             <button
               onClick={handleStartGuide}

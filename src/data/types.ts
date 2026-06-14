@@ -98,6 +98,40 @@ export interface FormulaDerivation {
   }[]
 }
 
+export interface StrokeAnnotation {
+  type: 'stroke'
+  color: string
+  lineWidth: number
+  points: { x: number; y: number }[]
+  isEraser?: boolean
+}
+
+export interface ArrowAnnotation {
+  type: 'arrow'
+  color: string
+  from: { x: number; y: number }
+  to: { x: number; y: number }
+}
+
+export interface CircleAnnotation {
+  type: 'circle'
+  color: string
+  center: { x: number; y: number }
+  radius: number
+}
+
+export interface TextAnnotation {
+  type: 'text'
+  color: string
+  position: { x: number; y: number }
+  content: string
+}
+
+export type Annotation = StrokeAnnotation | ArrowAnnotation | CircleAnnotation | TextAnnotation
+
+export type BrushTool = 'pen' | 'eraser' | 'arrow' | 'circle' | 'text'
+export type PenColor = '#ef4444' | '#eab308' | '#3b82f6'
+
 export interface ExperimentEngine {
   init(canvas: HTMLCanvasElement, params: Record<string, number>, width?: number, height?: number): void
   update(dt: number, params: Record<string, number>): void

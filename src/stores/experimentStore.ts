@@ -31,6 +31,9 @@ interface ExperimentState {
   savedTemplates: SavedTemplate[]
   selectedTemplateId: string | null
 
+  brushMode: boolean
+  setBrushMode: (mode: boolean) => void
+
   setCurrentExperiment: (id: string) => void
   setParam: (key: string, value: number) => void
   setParams: (params: Record<string, number>) => void
@@ -60,6 +63,7 @@ export const useExperimentStore = create<ExperimentState>((set, get) => ({
   currentGuide: null,
   savedTemplates: loadSavedTemplates(),
   selectedTemplateId: null,
+  brushMode: false,
 
   setCurrentExperiment: (id) => set({ currentExperimentId: id, selectedTemplateId: null }),
   setParam: (key, value) => set((state) => ({ params: { ...state.params, [key]: value }, selectedTemplateId: null })),
@@ -106,4 +110,5 @@ export const useExperimentStore = create<ExperimentState>((set, get) => ({
     saveSavedTemplates(updated)
   },
   setSelectedTemplateId: (id) => set({ selectedTemplateId: id }),
+  setBrushMode: (mode) => set({ brushMode: mode }),
 }))
