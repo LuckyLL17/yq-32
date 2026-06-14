@@ -32,6 +32,7 @@ export default function MeasurementOverlay({ containerRef }: MeasurementOverlayP
   const measuresRef = useRef(measures)
   const measureToolRef = useRef(measureTool)
   const measureColorRef = useRef(measureColor)
+  const hoveredMeasureRef = useRef(hoveredMeasure)
 
   useEffect(() => {
     measuresRef.current = measures
@@ -46,6 +47,10 @@ export default function MeasurementOverlay({ containerRef }: MeasurementOverlayP
   useEffect(() => {
     measureColorRef.current = measureColor
   }, [measureColor])
+
+  useEffect(() => {
+    hoveredMeasureRef.current = hoveredMeasure
+  }, [hoveredMeasure])
 
   const getCanvasCoords = useCallback((e: React.MouseEvent | MouseEvent) => {
     const canvas = canvasRef.current
@@ -81,54 +86,6 @@ export default function MeasurementOverlay({ containerRef }: MeasurementOverlayP
     return angleRad * (180 / Math.PI)
   }
 
-  const completeMeasurement = useCallback(() => {
-    const { points } = drawingRef.current
-    const tool = measureToolRef.current
-    const color = measureColorRef.current
-
-    if (points.length === 0) return
-
-    const id = `measure-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-
-    if (tool === 'coordinate') {
-      const measure: CoordinateMeasure = {
-        id,
-        type: 'coordinate',
-        point: points[0],
-        pinned: false,
-        color,
-      }
-      addMeasure(measure)
-    } else if (tool === 'distance' && points.length >= 2) {
-      const measure: DistanceMeasure = {
-        id,
-        type: 'distance',
-        from: points[0],
-        to: points[1],
-        distance: calculateDistance(points[0], points[1]),
-        pinned: false,
-        color,
-      }
-      addMeasure(measure)
-    } else if (tool === 'angle' && points.length >= 3) {
-      const measure: AngleMeasure = {
-        id,
-        type: 'angle',
-        vertex: points[0],
-        point1: points[1],
-        point2: points[2],
-        angle: calculateAngle(points[0], points[1], points[2]),
-        pinned: false,
-        color,
-      }
-      addMeasure(measure)
-    }
-
-    drawingRef.current.points = []
-    drawingRef.current.currentMousePos = null
-    redrawCanvas()
-  }, [addMeasure])
-
   const drawMeasure = useCallback((ctx: CanvasRenderingContext2D, measure: any, isHovered: boolean) => {
     ctx.save()
     ctx.strokeStyle = measure.color
@@ -158,8 +115,6 @@ export default function MeasurementOverlay({ containerRef }: MeasurementOverlayP
       ctx.setLineDash([])
     } else if (measure.type === 'distance') {
       const { from, to } = measure
-      const midX = (from.x + to.x) / 2
-      const midY = (from.y + to.y) / 2
       const angle = Math.atan2(to.y - from.y, to.x - from.x)
 
       ctx.beginPath()
@@ -262,7 +217,23 @@ export default function MeasurementOverlay({ containerRef }: MeasurementOverlayP
     ctx.shadowBlur = isHovered ? 8 : 4
 
     ctx.beginPath()
-    ctx.roundRect(labelX - boxWidth / 2, labelY - boxHeight, boxWidth, boxHeight, 4)
+    const boxX = labelX - boxWidth / 2
+    const boxY = labelY - boxHeight
+    if (ctx.roundRect) {
+      ctx.roundRect(boxX, boxY, boxWidth, boxHeight, 4)
+    } else {
+      const r = 4
+      ctx.moveTo(boxX + r, boxY)
+      ctx.lineTo(boxX + boxWidth - r, boxY)
+      ctx.quadraticCurveTo(boxX + boxWidth, boxY, boxX + boxWidth, boxY + r)
+      ctx.lineTo(boxX + boxWidth, boxY + boxHeight - r)
+      ctx.quadraticCurveTo(boxX + boxWidth, boxY + boxHeight, boxX + boxWidth - r, boxY + boxHeight)
+      ctx.lineTo(boxX + r, boxY + boxHeight)
+      ctx.quadraticCurveTo(boxX, boxY + boxHeight, boxX, boxY + boxHeight - r)
+      ctx.lineTo(boxX, boxY + r)
+      ctx.quadraticCurveTo(boxX, boxY, boxX + r, boxY)
+      ctx.closePath()
+    }
     ctx.fill()
     ctx.stroke()
 
@@ -356,17 +327,18 @@ export default function MeasurementOverlay({ containerRef }: MeasurementOverlayP
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    ctx.clearRect(0, 0, rect.width, rect.height)
+    const canvasRect = canvas.getBoundingClientRect()
+    ctx.clearRect(0, 0, canvasRect.width, canvasRect.height)
 
     measuresRef.current.forEach((measure) => {
-      const isHovered = hoveredMeasure === measure.id
+      const isHovered = hoveredMeasureRef.current === measure.id
       drawMeasure(ctx, measure, isHovered)
       drawLabel(ctx, measure, isHovered)
     })
 
     drawPendingPoints(ctx)
     drawPreview(ctx)
-  }, [hoveredMeasure, drawMeasure, drawLabel, drawPendingPoints, drawPreview])
+  }, [drawMeasure, drawLabel, drawPendingPoints, drawPreview, containerRef])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -383,8 +355,8 @@ export default function MeasurementOverlay({ containerRef }: MeasurementOverlayP
       const ctx = canvas.getContext('2d')
       if (ctx) {
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+        redrawCanvas()
       }
-      redrawCanvas()
     }
 
     resizeCanvas()
@@ -393,11 +365,62 @@ export default function MeasurementOverlay({ containerRef }: MeasurementOverlayP
     resizeObserver.observe(container)
 
     return () => resizeObserver.disconnect()
-  }, [redrawCanvas])
+  }, [redrawCanvas, containerRef])
 
   useEffect(() => {
     redrawCanvas()
-  }, [redrawCanvas])
+  }, [measures, redrawCanvas])
+
+  useEffect(() => {
+    redrawCanvas()
+  }, [hoveredMeasure, redrawCanvas])
+
+  const completeMeasurement = useCallback(() => {
+    const { points } = drawingRef.current
+    const tool = measureToolRef.current
+    const color = measureColorRef.current
+
+    if (points.length === 0) return
+
+    const id = `measure-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+
+    if (tool === 'coordinate') {
+      const measure: CoordinateMeasure = {
+        id,
+        type: 'coordinate',
+        point: points[0],
+        pinned: false,
+        color,
+      }
+      addMeasure(measure)
+    } else if (tool === 'distance' && points.length >= 2) {
+      const measure: DistanceMeasure = {
+        id,
+        type: 'distance',
+        from: points[0],
+        to: points[1],
+        distance: calculateDistance(points[0], points[1]),
+        pinned: false,
+        color,
+      }
+      addMeasure(measure)
+    } else if (tool === 'angle' && points.length >= 3) {
+      const measure: AngleMeasure = {
+        id,
+        type: 'angle',
+        vertex: points[0],
+        point1: points[1],
+        point2: points[2],
+        angle: calculateAngle(points[0], points[1], points[2]),
+        pinned: false,
+        color,
+      }
+      addMeasure(measure)
+    }
+
+    drawingRef.current.points = []
+    drawingRef.current.currentMousePos = null
+  }, [addMeasure])
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (measureToolRef.current === 'none') return
@@ -417,9 +440,8 @@ export default function MeasurementOverlay({ containerRef }: MeasurementOverlayP
 
     if (drawingRef.current.points.length >= required) {
       completeMeasurement()
-    } else {
-      redrawCanvas()
     }
+    redrawCanvas()
   }, [getCanvasCoords, completeMeasurement, redrawCanvas])
 
   const handleRightClick = useCallback((e: React.MouseEvent) => {
@@ -440,19 +462,22 @@ export default function MeasurementOverlay({ containerRef }: MeasurementOverlayP
     ? 'cursor-crosshair'
     : 'cursor-default'
 
-  const isActive = measureTool !== 'none' || measures.length > 0
-
-  if (!isActive) return null
+  const isInteractive = measureTool !== 'none'
+  const hasPinnedMeasures = measures.some((m) => m.pinned)
+  const shouldRenderOverlay = isInteractive || hasPinnedMeasures
 
   return (
-    <div ref={overlayContainerRef} className="absolute inset-0 z-15 pointer-events-none">
+    <div
+      ref={overlayContainerRef}
+      className={`absolute inset-0 z-30 ${isInteractive ? '' : 'pointer-events-none'}`}
+    >
       <canvas
         ref={canvasRef}
         onClick={handleClick}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
         onContextMenu={handleRightClick}
-        className={`block ${cursorClass} pointer-events-auto`}
+        className={`block ${cursorClass} ${isInteractive ? 'pointer-events-auto' : 'pointer-events-none'}`}
         style={{ touchAction: 'none' }}
       />
 
