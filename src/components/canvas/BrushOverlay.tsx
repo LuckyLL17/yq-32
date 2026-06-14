@@ -1,10 +1,17 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
-import { Pen, Eraser, ArrowRight, Circle, Type, Trash2 } from 'lucide-react'
+import { useEffect, useRef, useState, useCallback, forwardRef, useImperativeHandle } from 'react'
+import { Pen, Eraser, ArrowRight, Circle, Type, Trash2, Save, Check } from 'lucide-react'
 import type { Annotation, BrushTool, PenColor, StrokeAnnotation, ArrowAnnotation, CircleAnnotation, TextAnnotation } from '@/data/types'
 
 interface BrushOverlayProps {
   experimentId: string
   active: boolean
+  onDirtyChange?: (hasUnsavedChanges: boolean) => void
+}
+
+export interface BrushOverlayRef {
+  getHasUnsavedChanges: () => boolean
+  save: () => void
+  discard: () => void
 }
 
 const PEN_COLORS: { value: PenColor; label: string }[] = [
@@ -30,6 +37,10 @@ function saveAnnotations(experimentId: string, annotations: Annotation[]) {
   } catch {
     // ignore
   }
+}
+
+function annotationsEqual(a: Annotation[], b: Annotation[]): boolean {
+  return JSON.stringify(a) === JSON.stringify(b)
 }
 
 function renderAnnotation(ctx: CanvasRenderingContext2D, ann: Annotation) {
@@ -99,12 +110,13 @@ function redrawAll(ctx: CanvasRenderingContext2D, annotations: Annotation[], wid
   annotations.forEach((ann) => renderAnnotation(ctx, ann))
 }
 
-export default function BrushOverlay({ experimentId, active }: BrushOverlayProps) {
+const BrushOverlay = forwardRef<BrushOverlayRef, BrushOverlayProps>(function BrushOverlay({ experimentId, active, onDirtyChange }, ref) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [tool, setTool] = useState<BrushTool>('pen')
   const [color, setColor] = useState<PenColor>('#ef4444')
-  const [annotations, setAnnotations] = useState<Annotation[]>(() => loadAnnotations(experimentId))
+  const [annotations, setAnnotations] = useState<Annotation[]>([])
+  const savedAnnotationsRef = useRef<Annotation[]>([])
   const drawingRef = useRef(false)
   const startPosRef = useRef({ x: 0, y: 0 })
   const currentStrokeRef = useRef<{ x: number; y: number }[]>([])
@@ -113,6 +125,43 @@ export default function BrushOverlay({ experimentId, active }: BrushOverlayProps
   })
   const textInputRef = useRef<HTMLInputElement>(null)
   const annotationsRef = useRef(annotations)
+  const hasUnsavedChangesRef = useRef(false)
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const [saveFlash, setSaveFlash] = useState(false)
+  const onDirtyChangeRef = useRef(onDirtyChange)
+
+  useEffect(() => {
+    onDirtyChangeRef.current = onDirtyChange
+  }, [onDirtyChange])
+
+  useImperativeHandle(ref, () => ({
+    getHasUnsavedChanges: () => hasUnsavedChangesRef.current,
+    save: () => {
+      saveAnnotations(experimentId, annotationsRef.current)
+      savedAnnotationsRef.current = [...annotationsRef.current]
+      setHasUnsavedChanges(false)
+      hasUnsavedChangesRef.current = false
+      onDirtyChangeRef.current?.(false)
+    },
+    discard: () => {
+      const saved = loadAnnotations(experimentId)
+      setAnnotations(saved)
+      savedAnnotationsRef.current = saved
+      annotationsRef.current = saved
+      hasUnsavedChangesRef.current = false
+      setHasUnsavedChanges(false)
+      onDirtyChangeRef.current?.(false)
+      const canvas = canvasRef.current
+      const container = containerRef.current
+      if (canvas && container) {
+        const rect = container.getBoundingClientRect()
+        const ctx = canvas.getContext('2d')
+        if (ctx) {
+          redrawAll(ctx, saved, rect.width, rect.height)
+        }
+      }
+    },
+  }), [experimentId])
 
   useEffect(() => {
     annotationsRef.current = annotations
@@ -122,14 +171,20 @@ export default function BrushOverlay({ experimentId, active }: BrushOverlayProps
     if (experimentId) {
       const loaded = loadAnnotations(experimentId)
       setAnnotations(loaded)
+      savedAnnotationsRef.current = loaded
+      annotationsRef.current = loaded
+      hasUnsavedChangesRef.current = false
+      setHasUnsavedChanges(false)
+      onDirtyChangeRef.current?.(false)
     }
   }, [experimentId])
 
   useEffect(() => {
-    if (active) {
-      saveAnnotations(experimentId, annotations)
-    }
-  }, [annotations, experimentId, active])
+    const dirty = !annotationsEqual(annotations, savedAnnotationsRef.current)
+    hasUnsavedChangesRef.current = dirty
+    setHasUnsavedChanges(dirty)
+    onDirtyChangeRef.current?.(dirty)
+  }, [annotations])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -174,6 +229,16 @@ export default function BrushOverlay({ experimentId, active }: BrushOverlayProps
     if (!canvas) return null
     return canvas.getContext('2d')
   }, [])
+
+  const handleSave = useCallback(() => {
+    saveAnnotations(experimentId, annotationsRef.current)
+    savedAnnotationsRef.current = [...annotationsRef.current]
+    hasUnsavedChangesRef.current = false
+    setHasUnsavedChanges(false)
+    onDirtyChangeRef.current?.(false)
+    setSaveFlash(true)
+    setTimeout(() => setSaveFlash(false), 1200)
+  }, [experimentId])
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (!active) return
@@ -408,6 +473,13 @@ export default function BrushOverlay({ experimentId, active }: BrushOverlayProps
         </div>
       )}
 
+      {hasUnsavedChanges && (
+        <div className="brush-unsaved-dot" title="有未保存的更改">
+          <span className="w-2 h-2 rounded-full bg-neon-orange animate-pulse" />
+          <span className="text-[11px] font-orbitron">未保存</span>
+        </div>
+      )}
+
       <div className="brush-toolbar">
         <div className="brush-toolbar-inner">
           <div className="brush-tool-group">
@@ -470,9 +542,18 @@ export default function BrushOverlay({ experimentId, active }: BrushOverlayProps
             >
               <Trash2 className="w-4 h-4" />
             </button>
+            <button
+              className={`brush-tool-btn brush-save-btn ${saveFlash ? 'save-flash' : ''} ${hasUnsavedChanges ? 'has-unsaved' : ''}`}
+              onClick={handleSave}
+              title="保存画笔内容"
+            >
+              {saveFlash ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+            </button>
           </div>
         </div>
       </div>
     </div>
   )
-}
+})
+
+export default BrushOverlay

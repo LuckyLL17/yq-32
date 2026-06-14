@@ -72,7 +72,7 @@ export const useExperimentStore = create<ExperimentState>((set, get) => ({
   addChartData: (point) => set((state) => ({ chartData: [...state.chartData.slice(-200), point] })),
   clearChartData: () => set({ chartData: [] }),
   resetParams: (defaultParams) => set({ params: defaultParams, isRunning: false, selectedTemplateId: null }),
-  resetAll: () => set({ currentExperimentId: null, params: {}, isRunning: false, chartData: [], selectedTemplateId: null }),
+  resetAll: () => set({ currentExperimentId: null, params: {}, isRunning: false, chartData: [], selectedTemplateId: null, brushMode: false }),
   showGuide: (guide) => set({ guideVisible: true, currentGuideStep: 0, currentGuide: guide }),
   hideGuide: () => set({ guideVisible: false, currentGuideStep: 0, currentGuide: null }),
   setCurrentGuideStep: (step) => set({ currentGuideStep: step }),

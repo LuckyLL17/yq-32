@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useCallback } from 'react'
+import { useEffect, useMemo, useCallback, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Play, Pause, RotateCcw, GraduationCap, Paintbrush } from 'lucide-react'
 import { experiments } from '@/data/experiments'
@@ -11,7 +11,7 @@ import FormulaDisplay from '@/components/formula/FormulaDisplay'
 import DataChart from '@/components/charts/DataChart'
 import Sidebar from '@/components/layout/Sidebar'
 import ExperimentGuide from '@/components/guide/ExperimentGuide'
-import BrushOverlay from '@/components/canvas/BrushOverlay'
+import BrushOverlay, { type BrushOverlayRef } from '@/components/canvas/BrushOverlay'
 import { SpringEngine } from '@/engines/spring'
 import { ProjectileEngine } from '@/engines/projectile'
 import { WaveEngine } from '@/engines/wave'
@@ -28,6 +28,13 @@ const difficultyLabels: Record<string, { text: string; color: string }> = {
 export default function Lab() {
   const { experimentId } = useParams<{ experimentId: string }>()
   const config = useMemo(() => experiments.find((e) => e.experiment.id === experimentId), [experimentId])
+  const brushOverlayRef = useRef<BrushOverlayRef>(null)
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const hasUnsavedChangesRef = useRef(false)
+
+  useEffect(() => {
+    hasUnsavedChangesRef.current = hasUnsavedChanges
+  }, [hasUnsavedChanges])
 
   const {
     params,
@@ -90,6 +97,44 @@ export default function Lab() {
     }
   }, [resetAll])
 
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChangesRef.current) {
+        e.preventDefault()
+        e.returnValue = ''
+      }
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+    }
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      if (hasUnsavedChangesRef.current) {
+        const confirmLeave = window.confirm('画笔内容有未保存的更改，是否保存？\n\n点击「确定」保存并退出\n点击「取消」放弃更改并退出')
+        if (confirmLeave) {
+          brushOverlayRef.current?.save()
+        } else {
+          brushOverlayRef.current?.discard()
+        }
+      }
+    }
+  }, [])
+
+  const handleBrushModeToggle = () => {
+    if (brushMode && hasUnsavedChanges) {
+      const confirmClose = window.confirm('画笔内容有未保存的更改，是否保存？\n\n点击「确定」保存并关闭画笔模式\n点击「取消」放弃更改并关闭画笔模式')
+      if (confirmClose) {
+        brushOverlayRef.current?.save()
+      } else {
+        brushOverlayRef.current?.discard()
+      }
+    }
+    setBrushMode(!brushMode)
+  }
+
   const handleDataUpdate = useCallback((data: EngineData) => {
     addChartData({ x: data.time, y: data.primary })
   }, [addChartData])
@@ -136,14 +181,22 @@ export default function Lab() {
             running={isRunning}
           />
           <button
-            onClick={() => setBrushMode(!brushMode)}
-            className={`brush-mode-toggle ${brushMode ? 'active' : ''}`}
+            onClick={handleBrushModeToggle}
+            className={`brush-mode-toggle ${brushMode ? 'active' : ''} ${hasUnsavedChanges ? 'has-unsaved' : ''}`}
             title={brushMode ? '关闭画笔模式' : '开启画笔模式'}
           >
             <Paintbrush className="w-4 h-4" />
             <span className="text-xs font-orbitron">画笔</span>
+            {hasUnsavedChanges && brushMode && (
+              <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-neon-orange animate-pulse" />
+            )}
           </button>
-          <BrushOverlay experimentId={experimentId!} active={brushMode} />
+          <BrushOverlay
+            ref={brushOverlayRef}
+            experimentId={experimentId!}
+            active={brushMode}
+            onDirtyChange={setHasUnsavedChanges}
+          />
           {!guideVisible && config?.experiment.guide && (
             <button
               onClick={handleStartGuide}

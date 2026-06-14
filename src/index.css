@@ -580,6 +580,20 @@ body {
   box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
 }
 
+.brush-mode-toggle.has-unsaved {
+  border-color: var(--color-neon-orange);
+  animation: brush-unsaved-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes brush-unsaved-pulse {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(255, 107, 43, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 18px rgba(255, 107, 43, 0.4);
+  }
+}
+
 .brush-toolbar {
   position: absolute;
   bottom: 16px;
@@ -698,4 +712,56 @@ body {
 
 .brush-eraser-cursor {
   cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='10' fill='none' stroke='white' stroke-width='1.5'/%3E%3C/svg%3E") 12 12, auto;
+}
+
+.brush-unsaved-dot {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: rgba(10, 14, 23, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 107, 43, 0.4);
+  border-radius: 6px;
+  font-size: 11px;
+  color: var(--color-neon-orange);
+  font-family: 'Orbitron', monospace;
+  animation: brush-unsaved-pulse 1.5s ease-in-out infinite;
+}
+
+.brush-save-btn {
+  transition: all 0.2s ease;
+}
+
+.brush-save-btn.has-unsaved {
+  color: var(--color-neon-cyan);
+  border-color: rgba(0, 240, 255, 0.4);
+  background: rgba(0, 240, 255, 0.1);
+  animation: brush-save-pulse 2s ease-in-out infinite;
+}
+
+.brush-save-btn:hover {
+  background: rgba(0, 240, 255, 0.15) !important;
+  border-color: rgba(0, 240, 255, 0.6) !important;
+  color: var(--color-neon-cyan) !important;
+}
+
+.brush-save-btn.save-flash {
+  color: var(--color-neon-green) !important;
+  border-color: rgba(15, 155, 88, 0.6) !important;
+  background: rgba(15, 155, 88, 0.15) !important;
+  animation: none;
+}
+
+@keyframes brush-save-pulse {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(0, 240, 255, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 12px rgba(0, 240, 255, 0.4);
+  }
 }
