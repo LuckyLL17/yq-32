@@ -11,7 +11,9 @@ import FormulaDisplay from '@/components/formula/FormulaDisplay'
 import DataChart from '@/components/charts/DataChart'
 import Sidebar from '@/components/layout/Sidebar'
 import ExperimentGuide from '@/components/guide/ExperimentGuide'
-import BrushOverlay, { type BrushOverlayRef, saveBrushAnnotations, loadBrushAnnotations } from '@/components/canvas/BrushOverlay'
+import BrushOverlay, { type BrushOverlayRef, saveBrushAnnotations } from '@/components/canvas/BrushOverlay'
+import ScanExplore, { type ScanResult } from '@/components/controls/ScanExplore'
+import HeatmapDrawer from '@/components/controls/HeatmapDrawer'
 import type { Annotation } from '@/data/types'
 import { SpringEngine } from '@/engines/spring'
 import { ProjectileEngine } from '@/engines/projectile'
@@ -33,6 +35,8 @@ export default function Lab() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const hasUnsavedChangesRef = useRef(false)
   const annotationsRef = useRef<Annotation[]>([])
+  const [scanResult, setScanResult] = useState<ScanResult | null>(null)
+  const [heatmapOpen, setHeatmapOpen] = useState(false)
 
   useEffect(() => {
     hasUnsavedChangesRef.current = hasUnsavedChanges
@@ -143,6 +147,16 @@ export default function Lab() {
   const handleDataUpdate = useCallback((data: EngineData) => {
     addChartData({ x: data.time, y: data.primary })
   }, [addChartData])
+
+  const handleScanComplete = useCallback((result: ScanResult) => {
+    setScanResult(result)
+    setHeatmapOpen(true)
+  }, [])
+
+  const handleApplyHeatmapParams = useCallback((newParams: Record<string, number>) => {
+    setParams(newParams)
+    clearChartData()
+  }, [setParams, clearChartData])
 
   if (!config || !engine) {
     return (
@@ -286,6 +300,12 @@ export default function Lab() {
                 onChange={(v) => setParam(p.key, v)}
               />
             ))}
+            <ScanExplore
+              experimentId={experimentId!}
+              params={config.params}
+              currentParams={params}
+              onScanComplete={handleScanComplete}
+            />
           </div>
 
           <div data-guide-area="formula">
@@ -297,6 +317,12 @@ export default function Lab() {
           </div>
         </div>
       </div>
+      <HeatmapDrawer
+        result={scanResult}
+        open={heatmapOpen}
+        onClose={() => setHeatmapOpen(false)}
+        onApplyParams={handleApplyHeatmapParams}
+      />
       <ExperimentGuide />
     </div>
   )
