@@ -49,6 +49,7 @@ export default function Lab() {
     guideVisible,
     savedTemplates,
     selectedTemplateId,
+    highlightElement,
     setCurrentExperiment,
     setParam,
     setParams,
@@ -183,6 +184,7 @@ export default function Lab() {
             onParamChange={(newParams) => setParams(newParams)}
             onDataUpdate={handleDataUpdate}
             running={isRunning}
+            highlightElement={highlightElement}
           />
           <button
             onClick={handleBrushModeToggle}

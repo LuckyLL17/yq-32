@@ -1,4 +1,4 @@
-import type { ExperimentEngine, DragEvent, DragResult, EngineData } from '../data/types'
+import type { ExperimentEngine, DragEvent, DragResult, EngineData, HighlightElementType } from '../data/types'
 import { clearCanvas, drawGrid, drawCircle, drawText } from '../utils/canvas'
 
 interface Particle {
@@ -24,6 +24,8 @@ export class ReactionEngine implements ExperimentEngine {
   private reactionRate = 0
   private lastReactionTime = 0
   private rateHistory: { x: number; y: number }[] = []
+  private highlightElement: HighlightElementType | null = null
+  private highlightTime = 0
 
   init(canvas: HTMLCanvasElement, params: Record<string, number>, width?: number, height?: number): void {
     this.ctx = canvas.getContext('2d')!
@@ -69,6 +71,11 @@ export class ReactionEngine implements ExperimentEngine {
   }
 
   update(dt: number, params: Record<string, number>): void {
+    if (this.highlightElement) {
+      this.highlightTime += dt
+    } else {
+      this.highlightTime = 0
+    }
     this.time += dt
     this.params = { ...params }
 
@@ -172,6 +179,20 @@ export class ReactionEngine implements ExperimentEngine {
     }
   }
 
+  setHighlightElement(element: HighlightElementType | null): void {
+    this.highlightElement = element
+    this.highlightTime = 0
+  }
+
+  private getHighlightPulse(): number {
+    if (!this.highlightElement) return 0
+    return (Math.sin(this.highlightTime * 8) + 1) / 2
+  }
+
+  private isHighlighted(type: HighlightElementType): boolean {
+    return this.highlightElement === type
+  }
+
   render(): void {
     if (!this.ctx) return
     const ctx = this.ctx
@@ -179,15 +200,111 @@ export class ReactionEngine implements ExperimentEngine {
     clearCanvas(ctx, this.width, this.height)
     drawGrid(ctx, this.width, this.height)
 
+    const containerHighlighted = this.isHighlighted('container')
+    const containerPulse = containerHighlighted ? this.getHighlightPulse() : 0
     ctx.save()
-    ctx.strokeStyle = 'rgba(255,255,255,0.3)'
-    ctx.lineWidth = 2
+    ctx.strokeStyle = containerHighlighted ? `rgba(255, 255, 255, ${0.3 + containerPulse * 0.5})` : 'rgba(255,255,255,0.3)'
+    ctx.lineWidth = containerHighlighted ? 2 + containerPulse * 3 : 2
     ctx.strokeRect(50, 50, this.width - 100, this.height - 100)
+    if (containerHighlighted) {
+      ctx.shadowColor = '#ffffff'
+      ctx.shadowBlur = 15 + containerPulse * 25
+      ctx.strokeRect(50, 50, this.width - 100, this.height - 100)
+    }
     ctx.restore()
 
+    const reactantAHighlighted = this.isHighlighted('reactant_a')
+    const reactantAPulse = reactantAHighlighted ? this.getHighlightPulse() : 0
+    const reactantBHighlighted = this.isHighlighted('reactant_b')
+    const reactantBPulse = reactantBHighlighted ? this.getHighlightPulse() : 0
+    const productHighlighted = this.isHighlighted('product')
+    const productPulse = productHighlighted ? this.getHighlightPulse() : 0
+
     this.particles.forEach(p => {
-      drawCircle(ctx, p.x, p.y, p.radius, p.color, 'rgba(255,255,255,0.4)', p.color)
+      let fillColor = p.color
+      let strokeColor = 'rgba(255,255,255,0.4)'
+      let glowColor = p.color
+      let radius = p.radius
+
+      if (p.type === 'A' && reactantAHighlighted) {
+        fillColor = `rgb(${59 + reactantAPulse * 100}, ${130 + reactantAPulse * 100}, ${246})`
+        strokeColor = `rgba(59, 130, 246, ${0.5 + reactantAPulse * 0.5})`
+        glowColor = `rgba(59, 130, 246, ${0.5 + reactantAPulse * 0.5})`
+        radius = p.radius + reactantAPulse * 5
+      } else if (p.type === 'B' && reactantBHighlighted) {
+        fillColor = `rgb(${239 + reactantBPulse * 16}, ${68 + reactantBPulse * 68}, ${68})`
+        strokeColor = `rgba(239, 68, 68, ${0.5 + reactantBPulse * 0.5})`
+        glowColor = `rgba(239, 68, 68, ${0.5 + reactantBPulse * 0.5})`
+        radius = p.radius + reactantBPulse * 5
+      } else if (p.type === 'C' && productHighlighted) {
+        fillColor = `rgb(${34 + productPulse * 100}, ${197 + productPulse * 58}, ${94})`
+        strokeColor = `rgba(34, 197, 94, ${0.5 + productPulse * 0.5})`
+        glowColor = `rgba(34, 197, 94, ${0.5 + productPulse * 0.5})`
+        radius = p.radius + productPulse * 5
+      }
+
+      drawCircle(ctx, p.x, p.y, radius, fillColor, strokeColor, glowColor)
+
+      if ((p.type === 'A' && reactantAHighlighted) || (p.type === 'B' && reactantBHighlighted) || (p.type === 'C' && productHighlighted)) {
+        const pulse = p.type === 'A' ? reactantAPulse : p.type === 'B' ? reactantBPulse : productPulse
+        const shadowColor = p.type === 'A' ? '#3b82f6' : p.type === 'B' ? '#ef4444' : '#22c55e'
+        ctx.save()
+        ctx.shadowColor = shadowColor
+        ctx.shadowBlur = 20 + pulse * 30
+        ctx.beginPath()
+        ctx.arc(p.x, p.y, radius + pulse * 8, 0, Math.PI * 2)
+        ctx.strokeStyle = `${shadowColor}${Math.floor((0.6 + pulse * 0.4) * 255).toString(16).padStart(2, '0')}`
+        ctx.lineWidth = 3 + pulse * 3
+        ctx.stroke()
+        ctx.restore()
+      }
     })
+
+    const energyBarrierHighlighted = this.isHighlighted('energy_barrier')
+    const energyBarrierPulse = energyBarrierHighlighted ? this.getHighlightPulse() : 0
+    const ebX = this.width - 180
+    const ebY = this.height - 160
+    const ebW = 130
+    const ebH = 70
+    const activationEnergy = this.params.activationEnergy ?? 50
+    const ebPeakHeight = (activationEnergy / 100) * ebH * 0.8 + ebH * 0.2
+
+    ctx.save()
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.7)'
+    ctx.fillRect(ebX - 10, ebY - 25, ebW + 20, ebH + 40)
+    ctx.strokeStyle = energyBarrierHighlighted ? `rgba(168, 85, 247, ${0.3 + energyBarrierPulse * 0.4})` : 'rgba(168, 85, 247, 0.2)'
+    ctx.lineWidth = energyBarrierHighlighted ? 1 + energyBarrierPulse : 1
+    ctx.strokeRect(ebX - 10, ebY - 25, ebW + 20, ebH + 40)
+    ctx.restore()
+
+    drawText(ctx, '能量势垒', ebX + ebW / 2, ebY - 10, energyBarrierHighlighted ? `rgb(${168 + energyBarrierPulse * 87}, ${85 + energyBarrierPulse * 100}, ${247})` : '#a855f7', 11, 'center')
+
+    ctx.save()
+    const ebColor = energyBarrierHighlighted ? `rgb(${168 + energyBarrierPulse * 87}, ${85 + energyBarrierPulse * 100}, ${247})` : '#a855f7'
+    const ebLineWidth = energyBarrierHighlighted ? 2 + energyBarrierPulse * 2 : 2
+    ctx.strokeStyle = ebColor
+    ctx.lineWidth = ebLineWidth
+    ctx.beginPath()
+    ctx.moveTo(ebX, ebY + ebH - 10)
+    ctx.quadraticCurveTo(ebX + ebW * 0.5, ebY + ebH - ebPeakHeight - 10, ebX + ebW, ebY + ebH - 20)
+    ctx.stroke()
+
+    ctx.fillStyle = energyBarrierHighlighted ? `rgba(59, 130, 247, ${0.6 + energyBarrierPulse * 0.4})` : 'rgba(59, 130, 247, 0.6)'
+    ctx.fillRect(ebX - 5, ebY + ebH - 15, 15, 15)
+    ctx.fillStyle = energyBarrierHighlighted ? `rgba(34, 197, 94, ${0.6 + energyBarrierPulse * 0.4})` : 'rgba(34, 197, 94, 0.6)'
+    ctx.fillRect(ebX + ebW - 10, ebY + ebH - 25, 15, 15)
+
+    if (energyBarrierHighlighted) {
+      ctx.shadowColor = '#a855f7'
+      ctx.shadowBlur = 15 + energyBarrierPulse * 25
+      ctx.strokeStyle = `rgba(168, 85, 247, ${0.6 + energyBarrierPulse * 0.4})`
+      ctx.lineWidth = ebLineWidth + 2
+      ctx.beginPath()
+      ctx.moveTo(ebX, ebY + ebH - 10)
+      ctx.quadraticCurveTo(ebX + ebW * 0.5, ebY + ebH - ebPeakHeight - 10, ebX + ebW, ebY + ebH - 20)
+      ctx.stroke()
+    }
+    ctx.restore()
 
     const countA = this.particles.filter(p => p.type === 'A').length
     const countB = this.particles.filter(p => p.type === 'B').length

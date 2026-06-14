@@ -1,4 +1,4 @@
-import type { ExperimentEngine, DragEvent, DragResult, EngineData } from '../data/types'
+import type { ExperimentEngine, DragEvent, DragResult, EngineData, HighlightElementType } from '../data/types'
 import { clearCanvas, drawGrid, drawCircle, drawText, drawArrow } from '../utils/canvas'
 
 const ATOM_COLORS: Record<string, { color: string; radius: number; label: string }> = {
@@ -51,6 +51,8 @@ export class MoleculeEngine implements ExperimentEngine {
   private lastX = 0
   private rotation = 0
   private atoms: Atom3D[] = []
+  private highlightElement: HighlightElementType | null = null
+  private highlightTime = 0
 
   init(canvas: HTMLCanvasElement, params: Record<string, number>, width?: number, height?: number): void {
     this.ctx = canvas.getContext('2d')!
@@ -63,8 +65,27 @@ export class MoleculeEngine implements ExperimentEngine {
   update(dt: number, params: Record<string, number>): void {
     this.time += dt
     this.params = { ...params }
+    if (this.highlightElement) {
+      this.highlightTime += dt
+    } else {
+      this.highlightTime = 0
+    }
     this.rotation = (params.rotationY ?? 0) * Math.PI / 180
     this.updateAtoms()
+  }
+
+  setHighlightElement(element: HighlightElementType | null): void {
+    this.highlightElement = element
+    this.highlightTime = 0
+  }
+
+  private getHighlightPulse(): number {
+    if (!this.highlightElement) return 0
+    return (Math.sin(this.highlightTime * 8) + 1) / 2
+  }
+
+  private isHighlighted(type: HighlightElementType): boolean {
+    return this.highlightElement === type
   }
 
   private updateAtoms(): void {
@@ -98,6 +119,11 @@ export class MoleculeEngine implements ExperimentEngine {
     const projected = this.atoms.map((a) => ({ ...this.project(a), atom: a }))
     projected.sort((a, b) => a.depth - b.depth)
 
+    const bondHighlighted = this.isHighlighted('bond') || this.isHighlighted('molecule')
+    const bondPulse = bondHighlighted ? this.getHighlightPulse() : 0
+    const atomHighlighted = this.isHighlighted('atom') || this.isHighlighted('molecule')
+    const atomPulse = atomHighlighted ? this.getHighlightPulse() : 0
+
     for (let i = 0; i < this.atoms.length; i++) {
       for (let j = i + 1; j < this.atoms.length; j++) {
         const p1 = projected.find((p) => p.atom === this.atoms[i])!
@@ -105,8 +131,12 @@ export class MoleculeEngine implements ExperimentEngine {
         const avgDepth = (p1.depth + p2.depth) / 2
         const alpha = Math.max(0.3, Math.min(1, 800 / (800 + avgDepth)))
         ctx.save()
-        ctx.strokeStyle = `rgba(148, 163, 184, ${alpha})`
-        ctx.lineWidth = Math.max(2, 6 * alpha)
+        ctx.strokeStyle = bondHighlighted ? `rgb(${0 + bondPulse * 255}, ${240 + bondPulse * 15}, ${255})` : `rgba(148, 163, 184, ${alpha})`
+        ctx.lineWidth = bondHighlighted ? Math.max(2, 6 * alpha) + bondPulse * 4 : Math.max(2, 6 * alpha)
+        if (bondHighlighted) {
+          ctx.shadowColor = '#00f0ff'
+          ctx.shadowBlur = 15 + bondPulse * 25
+        }
         ctx.beginPath()
         ctx.moveTo(p1.x, p1.y)
         ctx.lineTo(p2.x, p2.y)
@@ -118,14 +148,25 @@ export class MoleculeEngine implements ExperimentEngine {
     projected.forEach(({ x, y, depth, atom }) => {
       const atomDef = ATOM_COLORS[atom.symbol]
       const scale = Math.max(0.6, Math.min(1.2, 800 / (800 + depth)))
-      const r = atomDef.radius * scale
-      const color = depth < 0 ? atomDef.color : atomDef.color
-      const glowColor = depth < 0 ? `rgba(255,255,255,0.5)` : `rgba(0,0,0,0.3)`
+      const r = atomDef.radius * scale + (atomHighlighted ? atomPulse * 5 : 0)
+      const color = atomHighlighted ? `rgb(${59 + atomPulse * 100}, ${130 + atomPulse * 100}, ${246})` : (depth < 0 ? atomDef.color : atomDef.color)
+      const glowColor = atomHighlighted ? `rgba(59, 130, 246, ${0.5 + atomPulse * 0.5})` : (depth < 0 ? `rgba(255,255,255,0.5)` : `rgba(0,0,0,0.3)`)
       ctx.save()
       ctx.shadowColor = glowColor
-      ctx.shadowBlur = 15 * scale
-      drawCircle(ctx, x, y, r, color, 'rgba(255,255,255,0.2)')
+      ctx.shadowBlur = atomHighlighted ? 25 + atomPulse * 35 : 15 * scale
+      drawCircle(ctx, x, y, r, color, atomHighlighted ? `rgb(${59 + atomPulse * 100}, ${130 + atomPulse * 100}, ${246})` : 'rgba(255,255,255,0.2)')
       ctx.restore()
+      if (atomHighlighted) {
+        ctx.save()
+        ctx.shadowColor = '#3b82f6'
+        ctx.shadowBlur = 25 + atomPulse * 35
+        ctx.beginPath()
+        ctx.arc(x, y, r + atomPulse * 8, 0, Math.PI * 2)
+        ctx.strokeStyle = `rgba(59, 130, 246, ${0.6 + atomPulse * 0.4})`
+        ctx.lineWidth = 3 + atomPulse * 3
+        ctx.stroke()
+        ctx.restore()
+      }
       drawText(ctx, atomDef.label, x, y, atom.symbol === 'H' ? '#000' : '#fff', Math.max(10, 14 * scale), 'center')
     })
 

@@ -1,4 +1,4 @@
-import type { ExperimentEngine, DragEvent, DragResult, EngineData } from '../data/types'
+import type { ExperimentEngine, DragEvent, DragResult, EngineData, HighlightElementType } from '../data/types'
 import { clearCanvas, drawGrid, drawArrow, drawCircle, drawText, drawTrail, drawLine } from '../utils/canvas'
 import { projectilePosition, projectileMaxHeight, projectileRange } from '../utils/physics'
 
@@ -18,6 +18,8 @@ export class ProjectileEngine implements ExperimentEngine {
   private isLaunched = false
   private maxHeightPoint = { x: 0, y: 0 }
   private rangePoint = { x: 0, y: 0 }
+  private highlightElement: HighlightElementType | null = null
+  private highlightTime = 0
 
   private get launchX() { return 100 }
   private get launchY() { return this.height - 50 }
@@ -42,6 +44,11 @@ export class ProjectileEngine implements ExperimentEngine {
 
   update(dt: number, params: Record<string, number>): void {
     this.params = { ...params }
+    if (this.highlightElement) {
+      this.highlightTime += dt
+    } else {
+      this.highlightTime = 0
+    }
     const v0 = params.velocity ?? 20
     const angleDeg = params.angle ?? 45
     const g = params.gravity ?? 9.8
@@ -68,6 +75,20 @@ export class ProjectileEngine implements ExperimentEngine {
     this.rangePoint = { x: this.launchX + range * SCALE, y: this.launchY }
   }
 
+  setHighlightElement(element: HighlightElementType | null): void {
+    this.highlightElement = element
+    this.highlightTime = 0
+  }
+
+  private getHighlightPulse(): number {
+    if (!this.highlightElement) return 0
+    return (Math.sin(this.highlightTime * 8) + 1) / 2
+  }
+
+  private isHighlighted(type: HighlightElementType): boolean {
+    return this.highlightElement === type
+  }
+
   render(): void {
     if (!this.ctx) return
     const ctx = this.ctx
@@ -81,25 +102,74 @@ export class ProjectileEngine implements ExperimentEngine {
     drawGrid(ctx, width, height)
 
     const groundY = this.launchY + 1
-    ctx.fillStyle = '#0f9b58'
+    const groundHighlighted = this.isHighlighted('ground')
+    const groundPulse = groundHighlighted ? this.getHighlightPulse() : 0
+    ctx.fillStyle = groundHighlighted ? `rgb(${15 + groundPulse * 50}, ${155 + groundPulse * 100}, ${88 + groundPulse * 50})` : '#0f9b58'
     ctx.fillRect(0, groundY, width, height - groundY)
-    ctx.strokeStyle = '#0f9b5880'
-    ctx.lineWidth = 2
+    ctx.strokeStyle = groundHighlighted ? `rgba(${15 + groundPulse * 100}, ${155 + groundPulse * 100}, ${88 + groundPulse * 100}, ${0.5 + groundPulse * 0.5})` : '#0f9b5880'
+    ctx.lineWidth = groundHighlighted ? 2 + groundPulse * 3 : 2
     ctx.beginPath()
     ctx.moveTo(0, groundY)
     ctx.lineTo(width, groundY)
     ctx.stroke()
+    if (groundHighlighted) {
+      ctx.save()
+      ctx.shadowColor = '#10b981'
+      ctx.shadowBlur = 15 + groundPulse * 25
+      ctx.strokeStyle = `rgba(16, 185, 129, ${0.6 + groundPulse * 0.4})`
+      ctx.lineWidth = 3 + groundPulse * 2
+      ctx.beginPath()
+      ctx.moveTo(0, groundY)
+      ctx.lineTo(width, groundY)
+      ctx.stroke()
+      ctx.restore()
+    }
 
     this.renderLauncher(ctx, v0, angleRad)
 
     drawLine(ctx, [this.maxHeightPoint, { x: this.maxHeightPoint.x, y: groundY }], 'rgba(251, 191, 36, 0.3)', 1)
     drawText(ctx, `H = ${projectileMaxHeight(v0, angleDeg, g).toFixed(1)}m`, this.maxHeightPoint.x + 6, this.maxHeightPoint.y - 6, '#fbbf24', 12)
 
+    const trajHighlighted = this.isHighlighted('trajectory')
+    const trajPulse = trajHighlighted ? this.getHighlightPulse() : 0
     if (this.trail.length > 1) {
-      drawTrail(ctx, this.trail, TRAIL_COLOR, 0.9)
+      const trajColor = trajHighlighted ? `rgb(${0 + trajPulse * 100}, ${240 + trajPulse * 15}, ${255})` : TRAIL_COLOR
+      if (trajHighlighted) {
+        ctx.save()
+        ctx.shadowColor = '#00f0ff'
+        ctx.shadowBlur = 15 + trajPulse * 25
+        ctx.strokeStyle = `rgba(0, 240, 255, ${0.6 + trajPulse * 0.4})`
+        ctx.lineWidth = 4 + trajPulse * 3
+        ctx.lineCap = 'round'
+        ctx.lineJoin = 'round'
+        ctx.beginPath()
+        ctx.moveTo(this.trail[0].x, this.trail[0].y)
+        for (let i = 1; i < this.trail.length; i++) {
+          ctx.lineTo(this.trail[i].x, this.trail[i].y)
+        }
+        ctx.stroke()
+        ctx.restore()
+      }
+      drawTrail(ctx, this.trail, trajColor, 0.9)
     }
 
-    drawCircle(ctx, this.currentPos.x, this.currentPos.y, 10, LAUNCH_COLOR, '#fff', LAUNCH_COLOR)
+    const projHighlighted = this.isHighlighted('projectile')
+    const projPulse = projHighlighted ? this.getHighlightPulse() : 0
+    const projGlowColor = projHighlighted ? `rgba(255, 107, 43, ${0.5 + projPulse * 0.5})` : `${LAUNCH_COLOR}80`
+    const projStrokeColor = projHighlighted ? `rgb(${255 + projPulse * 0}, ${107 + projPulse * 100}, ${43 + projPulse * 100})` : '#fff'
+    const projRadius = 10 + (projHighlighted ? projPulse * 5 : 0)
+    drawCircle(ctx, this.currentPos.x, this.currentPos.y, projRadius, LAUNCH_COLOR, projStrokeColor, projGlowColor)
+    if (projHighlighted) {
+      ctx.save()
+      ctx.shadowColor = '#ff6b2b'
+      ctx.shadowBlur = 20 + projPulse * 30
+      ctx.beginPath()
+      ctx.arc(this.currentPos.x, this.currentPos.y, projRadius + projPulse * 8, 0, Math.PI * 2)
+      ctx.strokeStyle = `rgba(255, 107, 43, ${0.6 + projPulse * 0.4})`
+      ctx.lineWidth = 3 + projPulse * 3
+      ctx.stroke()
+      ctx.restore()
+    }
 
     const range = projectileRange(v0, angleDeg, g)
     drawText(ctx, `R = ${range.toFixed(1)}m`, this.rangePoint.x, groundY + 24, '#fbbf24', 12, 'center')
@@ -118,21 +188,48 @@ export class ProjectileEngine implements ExperimentEngine {
     ctx.fillStyle = '#475569'
     ctx.fillRect(lx - 20, ly - 5, 40, 10)
 
+    const velHighlighted = this.isHighlighted('velocity_vector')
+    const velPulse = velHighlighted ? this.getHighlightPulse() : 0
     const len = 30 + v0
     const tipX = lx + Math.cos(angle) * len
     const tipY = ly - Math.sin(angle) * len
-    drawArrow(ctx, lx, ly, tipX, tipY, LAUNCH_COLOR, 3)
+    const velColor = velHighlighted ? `rgb(${255 + velPulse * 0}, ${107 + velPulse * 100}, ${43 + velPulse * 100})` : LAUNCH_COLOR
+    const velLineWidth = velHighlighted ? 3 + velPulse * 3 : 3
+    if (velHighlighted) {
+      ctx.save()
+      ctx.shadowColor = '#ff6b2b'
+      ctx.shadowBlur = 15 + velPulse * 25
+      drawArrow(ctx, lx, ly, tipX, tipY, `rgba(255, 107, 43, ${0.6 + velPulse * 0.4})`, velLineWidth + 2)
+      ctx.restore()
+    }
+    drawArrow(ctx, lx, ly, tipX, tipY, velColor, velLineWidth)
 
+    const angleHighlighted = this.isHighlighted('angle')
+    const anglePulse = angleHighlighted ? this.getHighlightPulse() : 0
+    const angleColor = angleHighlighted ? `rgb(${251 + anglePulse * 4}, ${191 + anglePulse * 64}, ${36})` : 'rgba(251, 191, 36, 0.5)'
+    const angleLineWidth = angleHighlighted ? 1.5 + anglePulse * 3 : 1.5
+    const angleRadius = 35 + (angleHighlighted ? anglePulse * 5 : 0)
+    if (angleHighlighted) {
+      ctx.save()
+      ctx.shadowColor = '#fbbf24'
+      ctx.shadowBlur = 15 + anglePulse * 25
+      ctx.strokeStyle = `rgba(251, 191, 36, ${0.6 + anglePulse * 0.4})`
+      ctx.lineWidth = angleLineWidth + 2
+      ctx.beginPath()
+      ctx.arc(lx, ly, angleRadius + 3, -angle, 0)
+      ctx.stroke()
+      ctx.restore()
+    }
     ctx.save()
-    ctx.strokeStyle = 'rgba(251, 191, 36, 0.5)'
-    ctx.lineWidth = 1.5
+    ctx.strokeStyle = angleColor
+    ctx.lineWidth = angleLineWidth
     ctx.beginPath()
-    ctx.arc(lx, ly, 35, -angle, 0)
+    ctx.arc(lx, ly, angleRadius, -angle, 0)
     ctx.stroke()
     ctx.restore()
 
-    drawText(ctx, `${this.params.angle ?? 45}°`, lx + 40, ly - 8, '#fbbf24', 12)
-    drawText(ctx, `v₀`, tipX + 6, tipY - 6, LAUNCH_COLOR, 14)
+    drawText(ctx, `${this.params.angle ?? 45}°`, lx + 40, ly - 8, angleHighlighted ? `rgb(${251 + anglePulse * 4}, ${191 + anglePulse * 64}, ${36})` : '#fbbf24', angleHighlighted ? 12 + anglePulse * 2 : 12)
+    drawText(ctx, `v₀`, tipX + 6, tipY - 6, velColor, velHighlighted ? 14 + velPulse * 2 : 14)
   }
 
   handleDrag(event: DragEvent): DragResult {

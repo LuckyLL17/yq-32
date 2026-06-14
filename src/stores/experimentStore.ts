@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { GuideStep, SavedTemplate } from '@/data/types'
+import type { GuideStep, SavedTemplate, HighlightElementType, VoiceConfig } from '@/data/types'
 
 const SAVED_TEMPLATES_KEY = 'lab_saved_templates'
 
@@ -34,6 +34,16 @@ interface ExperimentState {
   brushMode: boolean
   setBrushMode: (mode: boolean) => void
 
+  highlightElement: HighlightElementType | null
+  setHighlightElement: (element: HighlightElementType | null) => void
+
+  isSpeaking: boolean
+  speakingSegmentIndex: number
+  voiceConfig: VoiceConfig
+  setVoiceConfig: (config: Partial<VoiceConfig>) => void
+  setIsSpeaking: (speaking: boolean) => void
+  setSpeakingSegmentIndex: (index: number) => void
+
   setCurrentExperiment: (id: string) => void
   setParam: (key: string, value: number) => void
   setParams: (params: Record<string, number>) => void
@@ -64,6 +74,15 @@ export const useExperimentStore = create<ExperimentState>((set, get) => ({
   savedTemplates: loadSavedTemplates(),
   selectedTemplateId: null,
   brushMode: false,
+  highlightElement: null,
+  isSpeaking: false,
+  speakingSegmentIndex: -1,
+  voiceConfig: {
+    rate: 1,
+    pitch: 1,
+    volume: 1,
+    voiceName: '',
+  },
 
   setCurrentExperiment: (id) => set({ currentExperimentId: id, selectedTemplateId: null }),
   setParam: (key, value) => set((state) => ({ params: { ...state.params, [key]: value }, selectedTemplateId: null })),
@@ -72,7 +91,17 @@ export const useExperimentStore = create<ExperimentState>((set, get) => ({
   addChartData: (point) => set((state) => ({ chartData: [...state.chartData.slice(-200), point] })),
   clearChartData: () => set({ chartData: [] }),
   resetParams: (defaultParams) => set({ params: defaultParams, isRunning: false, selectedTemplateId: null }),
-  resetAll: () => set({ currentExperimentId: null, params: {}, isRunning: false, chartData: [], selectedTemplateId: null, brushMode: false }),
+  resetAll: () => set({ 
+    currentExperimentId: null, 
+    params: {}, 
+    isRunning: false, 
+    chartData: [], 
+    selectedTemplateId: null, 
+    brushMode: false,
+    highlightElement: null,
+    isSpeaking: false,
+    speakingSegmentIndex: -1,
+  }),
   showGuide: (guide) => set({ guideVisible: true, currentGuideStep: 0, currentGuide: guide }),
   hideGuide: () => set({ guideVisible: false, currentGuideStep: 0, currentGuide: null }),
   setCurrentGuideStep: (step) => set({ currentGuideStep: step }),
@@ -111,4 +140,10 @@ export const useExperimentStore = create<ExperimentState>((set, get) => ({
   },
   setSelectedTemplateId: (id) => set({ selectedTemplateId: id }),
   setBrushMode: (mode) => set({ brushMode: mode }),
+  setHighlightElement: (element) => set({ highlightElement: element }),
+  setVoiceConfig: (config) => set((state) => ({ 
+    voiceConfig: { ...state.voiceConfig, ...config } 
+  })),
+  setIsSpeaking: (speaking) => set({ isSpeaking: speaking }),
+  setSpeakingSegmentIndex: (index) => set({ speakingSegmentIndex: index }),
 }))

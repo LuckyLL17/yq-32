@@ -75,6 +75,35 @@ export interface VariableDefinition {
   unit: string
   description: string
   relatedVariables?: string[]
+  canvasElement?: string
+}
+
+export type HighlightElementType = 'mass' | 'spring' | 'wall' | 'displacement' | 'velocity' | 'force' | 'trajectory' | 'projectile' | 'ground' | 'velocity_vector' | 'angle' | 'wave_source' | 'wave_front' | 'interference_pattern' | 'slit' | 'screen' | 'function_curve' | 'coordinate_axis' | 'vertex' | 'atom' | 'bond' | 'molecule' | 'reactant_a' | 'reactant_b' | 'product' | 'container' | 'energy_barrier'
+
+export interface HighlightElement {
+  type: HighlightElementType
+  active: boolean
+  intensity: number
+}
+
+export interface VoiceConfig {
+  rate: number
+  pitch: number
+  volume: number
+  voiceName: string
+}
+
+export interface SpeechSegment {
+  text: string
+  variableSymbol?: string
+  canvasElement?: HighlightElementType
+  duration?: number
+}
+
+export interface FormulaSpeechData {
+  formulaDescription: string
+  variableSegments: SpeechSegment[]
+  fullText: string
 }
 
 export interface DerivationStep {
@@ -139,6 +168,7 @@ export interface ExperimentEngine {
   handleDrag(event: DragEvent): DragResult
   getData(): EngineData
   getFormulaWithValues(params: Record<string, number>): string
+  setHighlightElement(element: HighlightElementType | null): void
   destroy(): void
 }
 

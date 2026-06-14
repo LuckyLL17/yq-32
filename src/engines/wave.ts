@@ -1,4 +1,4 @@
-import type { ExperimentEngine, DragEvent, DragResult, EngineData } from '@/data/types'
+import type { ExperimentEngine, DragEvent, DragResult, EngineData, HighlightElementType } from '@/data/types'
 import { drawGrid, clearCanvas, drawText, drawLine, drawCircle } from '@/utils/canvas'
 import { waveInterference } from '@/utils/physics'
 
@@ -11,6 +11,8 @@ export class WaveEngine implements ExperimentEngine {
   private imageData: ImageData | null = null
   private dragging: 'top' | 'bottom' | null = null
   private halfW = 0
+  private highlightElement: HighlightElementType | null = null
+  private highlightTime = 0
   private static readonly SLIT_HALF = 3
   private static readonly BARRIER_W = 8
 
@@ -40,6 +42,25 @@ export class WaveEngine implements ExperimentEngine {
   update(dt: number, params: Record<string, number>): void {
     this.time += dt
     this.params = { ...params }
+    if (this.highlightElement) {
+      this.highlightTime += dt
+    } else {
+      this.highlightTime = 0
+    }
+  }
+
+  setHighlightElement(element: HighlightElementType | null): void {
+    this.highlightElement = element
+    this.highlightTime = 0
+  }
+
+  private getHighlightPulse(): number {
+    if (!this.highlightElement) return 0
+    return (Math.sin(this.highlightTime * 8) + 1) / 2
+  }
+
+  private isHighlighted(type: HighlightElementType): boolean {
+    return this.highlightElement === type
   }
 
   render(): void {
@@ -59,20 +80,75 @@ export class WaveEngine implements ExperimentEngine {
     const slit1Y = this.centerY - slitDistance / 2
     const slit2Y = this.centerY + slitDistance / 2
 
-    ctx.fillStyle = '#4a5568'
+    const waveSourceHighlighted = this.isHighlighted('wave_source')
+    const waveSourcePulse = waveSourceHighlighted ? this.getHighlightPulse() : 0
+    if (waveSourceHighlighted) {
+      ctx.save()
+      ctx.shadowColor = '#00f0ff'
+      ctx.shadowBlur = 20 + waveSourcePulse * 30
+      ctx.fillStyle = `rgba(0, 240, 255, ${0.1 + waveSourcePulse * 0.2})`
+      ctx.fillRect(0, 0, bx - bw / 2, height)
+      ctx.restore()
+      ctx.save()
+      ctx.shadowColor = '#00f0ff'
+      ctx.shadowBlur = 15 + waveSourcePulse * 25
+      ctx.strokeStyle = `rgba(0, 240, 255, ${0.5 + waveSourcePulse * 0.5})`
+      ctx.lineWidth = 3 + waveSourcePulse * 3
+      ctx.strokeRect(0, 0, bx - bw / 2, height)
+      ctx.restore()
+    }
+
+    const slitHighlighted = this.isHighlighted('slit')
+    const slitPulse = slitHighlighted ? this.getHighlightPulse() : 0
+    ctx.fillStyle = slitHighlighted ? `rgb(${74 + slitPulse * 100}, ${85 + slitPulse * 100}, ${104 + slitPulse * 100})` : '#4a5568'
     ctx.fillRect(bx - bw / 2, 0, bw, slit1Y - sw)
     ctx.fillRect(bx - bw / 2, slit1Y + sw, bw, (slit2Y - sw) - (slit1Y + sw))
     ctx.fillRect(bx - bw / 2, slit2Y + sw, bw, height - (slit2Y + sw))
+    if (slitHighlighted) {
+      ctx.save()
+      ctx.shadowColor = '#00f0ff'
+      ctx.shadowBlur = 20 + slitPulse * 30
+      ctx.strokeStyle = `rgba(0, 240, 255, ${0.5 + slitPulse * 0.5})`
+      ctx.lineWidth = 3 + slitPulse * 2
+      ctx.strokeRect(bx - bw / 2, 0, bw, slit1Y - sw)
+      ctx.strokeRect(bx - bw / 2, slit1Y + sw, bw, (slit2Y - sw) - (slit1Y + sw))
+      ctx.strokeRect(bx - bw / 2, slit2Y + sw, bw, height - (slit2Y + sw))
+      ctx.restore()
+    }
 
-    drawCircle(ctx, bx, slit1Y, 5, '#00f0ff', undefined, '#00f0ff')
-    drawCircle(ctx, bx, slit2Y, 5, '#00f0ff', undefined, '#00f0ff')
-    drawText(ctx, '缝1', bx + 12, slit1Y - 10, '#00f0ff', 11)
-    drawText(ctx, '缝2', bx + 12, slit2Y + 10, '#00f0ff', 11)
+    const slitCircleColor = slitHighlighted ? `rgb(${0 + slitPulse * 255}, ${240 + slitPulse * 15}, ${255})` : '#00f0ff'
+    const slitCircleGlow = slitHighlighted ? `rgba(0, 240, 255, ${0.5 + slitPulse * 0.5})` : '#00f0ff'
+    drawCircle(ctx, bx, slit1Y, 5 + (slitHighlighted ? slitPulse * 3 : 0), slitCircleColor, undefined, slitCircleGlow)
+    drawCircle(ctx, bx, slit2Y, 5 + (slitHighlighted ? slitPulse * 3 : 0), slitCircleColor, undefined, slitCircleGlow)
+    const slitTextColor = slitHighlighted ? `rgb(${0 + slitPulse * 255}, ${240 + slitPulse * 15}, ${255})` : '#00f0ff'
+    const slitTextSize = slitHighlighted ? 11 + slitPulse * 2 : 11
+    drawText(ctx, '缝1', bx + 12, slit1Y - 10, slitTextColor, slitTextSize)
+    drawText(ctx, '缝2', bx + 12, slit2Y + 10, slitTextColor, slitTextSize)
 
     const waveSpeed = wavelength * frequency
     const phase = (this.time * waveSpeed) % wavelength
-    ctx.strokeStyle = 'rgba(0, 240, 255, 0.3)'
-    ctx.lineWidth = 1.5
+
+    const waveFrontHighlighted = this.isHighlighted('wave_front')
+    const waveFrontPulse = waveFrontHighlighted ? this.getHighlightPulse() : 0
+    const waveFrontColor = waveFrontHighlighted ? `rgba(0, 240, 255, ${0.3 + waveFrontPulse * 0.5})` : 'rgba(0, 240, 255, 0.3)'
+    const waveFrontLineWidth = waveFrontHighlighted ? 1.5 + waveFrontPulse * 3 : 1.5
+    if (waveFrontHighlighted) {
+      ctx.save()
+      ctx.shadowColor = '#00f0ff'
+      ctx.shadowBlur = 15 + waveFrontPulse * 25
+      ctx.strokeStyle = `rgba(0, 240, 255, ${0.6 + waveFrontPulse * 0.4})`
+      ctx.lineWidth = waveFrontLineWidth + 2
+      for (let x = phase; x < bx - bw / 2; x += wavelength) {
+        if (x < 0) continue
+        ctx.beginPath()
+        ctx.moveTo(x, 0)
+        ctx.lineTo(x, height)
+        ctx.stroke()
+      }
+      ctx.restore()
+    }
+    ctx.strokeStyle = waveFrontColor
+    ctx.lineWidth = waveFrontLineWidth
     for (let x = phase; x < bx - bw / 2; x += wavelength) {
       if (x < 0) continue
       ctx.beginPath()
@@ -81,7 +157,21 @@ export class WaveEngine implements ExperimentEngine {
       ctx.stroke()
     }
 
-    this.renderInterferencePattern(wavelength, slitDistance)
+    const screenHighlighted = this.isHighlighted('screen')
+    const screenPulse = screenHighlighted ? this.getHighlightPulse() : 0
+    if (screenHighlighted) {
+      ctx.save()
+      ctx.shadowColor = '#00f0ff'
+      ctx.shadowBlur = 20 + screenPulse * 30
+      ctx.strokeStyle = `rgba(0, 240, 255, ${0.5 + screenPulse * 0.5})`
+      ctx.lineWidth = 3 + screenPulse * 3
+      ctx.strokeRect(this.halfW, 0, width - this.halfW, height)
+      ctx.restore()
+    }
+
+    const interferenceHighlighted = this.isHighlighted('interference_pattern')
+    const interferencePulse = interferenceHighlighted ? this.getHighlightPulse() : 0
+    this.renderInterferencePattern(wavelength, slitDistance, interferenceHighlighted, interferencePulse)
 
     this.renderIntensityCurve(wavelength, slitDistance)
 
@@ -89,7 +179,7 @@ export class WaveEngine implements ExperimentEngine {
     drawText(ctx, `d = ${slitDistance} px`, 10, 40, '#00f0ff', 12)
   }
 
-  private renderInterferencePattern(wavelength: number, slitDistance: number): void {
+  private renderInterferencePattern(wavelength: number, slitDistance: number, highlighted: boolean, pulse: number): void {
     if (!this.ctx || !this.imageData) return
     const { halfW, barrierX: bx, centerY: cy } = this
     const data = this.imageData.data
@@ -98,6 +188,7 @@ export class WaveEngine implements ExperimentEngine {
     const imgW = this._imgDataWidth
     const imgH = this._imgDataHeight
 
+    const intensityBoost = highlighted ? 1 + pulse * 0.5 : 1
     for (let py = 0; py < imgH; py++) {
       const screenY = (py / scaleY) - cy
       for (let px = 0; px < imgW; px++) {
@@ -110,7 +201,7 @@ export class WaveEngine implements ExperimentEngine {
           data[idx + 3] = 255
           continue
         }
-        const intensity = waveInterference(wavelength, slitDistance, screenX, screenY) * breathe
+        const intensity = Math.min(1, waveInterference(wavelength, slitDistance, screenX, screenY) * breathe * intensityBoost)
         data[idx] = Math.round(10 * (1 - intensity))
         data[idx + 1] = Math.round(14 + (240 - 14) * intensity)
         data[idx + 2] = Math.round(23 + (255 - 23) * intensity)
@@ -119,6 +210,27 @@ export class WaveEngine implements ExperimentEngine {
     }
 
     this.ctx.putImageData(this.imageData, halfW * scaleX, 0)
+
+    if (highlighted) {
+      const ctx = this.ctx
+      ctx.save()
+      ctx.shadowColor = '#00f0ff'
+      ctx.shadowBlur = 25 + pulse * 35
+      ctx.fillStyle = `rgba(0, 240, 255, ${0.05 + pulse * 0.1})`
+      ctx.fillRect(halfW, 0, this.width - halfW, this.height)
+      ctx.restore()
+      ctx.save()
+      ctx.shadowColor = '#00f0ff'
+      ctx.shadowBlur = 15 + pulse * 25
+      ctx.strokeStyle = `rgba(0, 240, 255, ${0.6 + pulse * 0.4})`
+      ctx.lineWidth = 2 + pulse * 3
+      for (let i = 0; i < 3; i++) {
+        const offset = pulse * 10 + i * 8
+        ctx.globalAlpha = 0.5 - i * 0.15
+        ctx.strokeRect(halfW + offset, offset, this.width - halfW - offset * 2, this.height - offset * 2)
+      }
+      ctx.restore()
+    }
   }
 
   private renderIntensityCurve(wavelength: number, slitDistance: number): void {

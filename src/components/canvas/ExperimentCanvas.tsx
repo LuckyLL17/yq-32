@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import type { ExperimentEngine, EngineData } from '@/data/types'
+import type { ExperimentEngine, EngineData, HighlightElementType } from '@/data/types'
 import { AnimationLoop } from '@/utils/animation'
 
 interface ExperimentCanvasProps {
@@ -8,6 +8,7 @@ interface ExperimentCanvasProps {
   onParamChange?: (params: Record<string, number>) => void
   onDataUpdate?: (data: EngineData) => void
   running?: boolean
+  highlightElement?: HighlightElementType | null
 }
 
 export default function ExperimentCanvas({
@@ -16,6 +17,7 @@ export default function ExperimentCanvas({
   onParamChange,
   onDataUpdate,
   running = true,
+  highlightElement = null,
 }: ExperimentCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -25,6 +27,7 @@ export default function ExperimentCanvas({
   const loopRef = useRef<AnimationLoop | null>(null)
   const onDataUpdateRef = useRef(onDataUpdate)
   const runningRef = useRef(running)
+  const highlightElementRef = useRef(highlightElement)
 
   useEffect(() => {
     engineRef.current = engine
@@ -47,6 +50,11 @@ export default function ExperimentCanvas({
   useEffect(() => {
     runningRef.current = running
   }, [running])
+
+  useEffect(() => {
+    highlightElementRef.current = highlightElement
+    engineRef.current.setHighlightElement(highlightElement)
+  }, [highlightElement])
 
   useEffect(() => {
     const canvas = canvasRef.current

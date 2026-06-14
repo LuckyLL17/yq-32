@@ -1,4 +1,4 @@
-import type { ExperimentEngine, DragEvent, DragResult, EngineData } from '../data/types'
+import type { ExperimentEngine, DragEvent, DragResult, EngineData, HighlightElementType } from '../data/types'
 import { clearCanvas, drawGrid, drawArrow, drawLine, drawCircle, drawText, drawTrail } from '../utils/canvas'
 import { quadraticValue, quadraticVertex } from '../utils/physics'
 
@@ -22,6 +22,8 @@ export class FunctionEngine implements ExperimentEngine {
   private xIntersects: { x: number; y: number }[] = []
   private yIntersect: { x: number; y: number } = { x: 0, y: 0 }
   private discriminant: number = 0
+  private highlightElement: HighlightElementType | null = null
+  private highlightTime: number = 0
 
   init(canvas: HTMLCanvasElement, params: Record<string, number>, width?: number, height?: number): void {
     this.ctx = canvas.getContext('2d')!
@@ -32,7 +34,12 @@ export class FunctionEngine implements ExperimentEngine {
     this.params = { ...params }
   }
 
-  update(_dt: number, params: Record<string, number>): void {
+  update(dt: number, params: Record<string, number>): void {
+    if (this.highlightElement) {
+      this.highlightTime += dt
+    } else {
+      this.highlightTime = 0
+    }
     this.params = { ...params }
     const a = params.a ?? 1
     const b = params.b ?? 0
@@ -73,6 +80,20 @@ export class FunctionEngine implements ExperimentEngine {
     }
   }
 
+  setHighlightElement(element: HighlightElementType | null): void {
+    this.highlightElement = element
+    this.highlightTime = 0
+  }
+
+  private getHighlightPulse(): number {
+    if (!this.highlightElement) return 0
+    return (Math.sin(this.highlightTime * 8) + 1) / 2
+  }
+
+  private isHighlighted(type: HighlightElementType): boolean {
+    return this.highlightElement === type
+  }
+
   render(): void {
     if (!this.ctx) return
     const ctx = this.ctx
@@ -91,8 +112,20 @@ export class FunctionEngine implements ExperimentEngine {
   }
 
   private renderAxes(ctx: CanvasRenderingContext2D): void {
-    drawArrow(ctx, 0, this.originY, this.width, this.originY, '#ffffff', 2)
-    drawArrow(ctx, this.originX, this.height, this.originX, 0, '#ffffff', 2)
+    const axisHighlighted = this.isHighlighted('coordinate_axis')
+    const axisPulse = axisHighlighted ? this.getHighlightPulse() : 0
+    const axisColor = axisHighlighted ? `rgb(${255}, ${255 + axisPulse * 0}, ${255})` : '#ffffff'
+    const axisLineWidth = axisHighlighted ? 2 + axisPulse * 3 : 2
+    if (axisHighlighted) {
+      ctx.save()
+      ctx.shadowColor = '#ffffff'
+      ctx.shadowBlur = 15 + axisPulse * 25
+      drawArrow(ctx, 0, this.originY, this.width, this.originY, `rgba(255, 255, 255, ${0.6 + axisPulse * 0.4})`, axisLineWidth + 2)
+      drawArrow(ctx, this.originX, this.height, this.originX, 0, `rgba(255, 255, 255, ${0.6 + axisPulse * 0.4})`, axisLineWidth + 2)
+      ctx.restore()
+    }
+    drawArrow(ctx, 0, this.originY, this.width, this.originY, axisColor, axisLineWidth)
+    drawArrow(ctx, this.originX, this.height, this.originX, 0, axisColor, axisLineWidth)
   }
 
   private renderTicks(ctx: CanvasRenderingContext2D): void {
@@ -153,15 +186,49 @@ export class FunctionEngine implements ExperimentEngine {
 
   private renderCurve(ctx: CanvasRenderingContext2D): void {
     if (this.curvePoints.length < 2) return
-    drawLine(ctx, this.curvePoints, CURVE_COLOR, 2.5, true)
+    const curveHighlighted = this.isHighlighted('function_curve')
+    const curvePulse = curveHighlighted ? this.getHighlightPulse() : 0
+    const curveColor = curveHighlighted ? `rgb(${0 + curvePulse * 255}, ${255 + curvePulse * 0}, ${204 + curvePulse * 51})` : CURVE_COLOR
+    const curveLineWidth = curveHighlighted ? 2.5 + curvePulse * 3 : 2.5
+    if (curveHighlighted) {
+      ctx.save()
+      ctx.shadowColor = '#00ffcc'
+      ctx.shadowBlur = 20 + curvePulse * 30
+      ctx.strokeStyle = `rgba(0, 255, 204, ${0.6 + curvePulse * 0.4})`
+      ctx.lineWidth = curveLineWidth + 2
+      ctx.lineJoin = 'round'
+      ctx.beginPath()
+      ctx.moveTo(this.curvePoints[0].x, this.curvePoints[0].y)
+      for (let i = 1; i < this.curvePoints.length; i++) {
+        ctx.lineTo(this.curvePoints[i].x, this.curvePoints[i].y)
+      }
+      ctx.stroke()
+      ctx.restore()
+    }
+    drawLine(ctx, this.curvePoints, curveColor, curveLineWidth, true)
   }
 
   private renderVertex(ctx: CanvasRenderingContext2D): void {
     const a = this.params.a ?? 1
     if (a === 0) return
-    drawCircle(ctx, this.vertexCanvas.x, this.vertexCanvas.y, 6, VERTEX_COLOR, '#fff', VERTEX_COLOR)
+    const vertexHighlighted = this.isHighlighted('vertex')
+    const vertexPulse = vertexHighlighted ? this.getHighlightPulse() : 0
+    const vertexColor = vertexHighlighted ? `rgb(${255}, ${140 + vertexPulse * 115}, ${0 + vertexPulse * 0})` : VERTEX_COLOR
+    const vertexRadius = vertexHighlighted ? 6 + vertexPulse * 5 : 6
+    if (vertexHighlighted) {
+      ctx.save()
+      ctx.shadowColor = '#ff8c00'
+      ctx.shadowBlur = 25 + vertexPulse * 35
+      ctx.beginPath()
+      ctx.arc(this.vertexCanvas.x, this.vertexCanvas.y, vertexRadius + vertexPulse * 8, 0, Math.PI * 2)
+      ctx.strokeStyle = `rgba(255, 140, 0, ${0.6 + vertexPulse * 0.4})`
+      ctx.lineWidth = 3 + vertexPulse * 3
+      ctx.stroke()
+      ctx.restore()
+    }
+    drawCircle(ctx, this.vertexCanvas.x, this.vertexCanvas.y, vertexRadius, vertexColor, '#fff', vertexColor)
     const label = `(${this.vertexMath.x.toFixed(2)}, ${this.vertexMath.y.toFixed(2)})`
-    drawText(ctx, label, this.vertexCanvas.x + 12, this.vertexCanvas.y - 12, VERTEX_COLOR, 13, 'left')
+    drawText(ctx, label, this.vertexCanvas.x + 12, this.vertexCanvas.y - 12, vertexColor, vertexHighlighted ? 13 + vertexPulse * 2 : 13, 'left')
   }
 
   private renderXIntersects(ctx: CanvasRenderingContext2D): void {
