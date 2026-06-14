@@ -11,7 +11,8 @@ import FormulaDisplay from '@/components/formula/FormulaDisplay'
 import DataChart from '@/components/charts/DataChart'
 import Sidebar from '@/components/layout/Sidebar'
 import ExperimentGuide from '@/components/guide/ExperimentGuide'
-import BrushOverlay, { type BrushOverlayRef } from '@/components/canvas/BrushOverlay'
+import BrushOverlay, { type BrushOverlayRef, saveBrushAnnotations, loadBrushAnnotations } from '@/components/canvas/BrushOverlay'
+import type { Annotation } from '@/data/types'
 import { SpringEngine } from '@/engines/spring'
 import { ProjectileEngine } from '@/engines/projectile'
 import { WaveEngine } from '@/engines/wave'
@@ -31,10 +32,15 @@ export default function Lab() {
   const brushOverlayRef = useRef<BrushOverlayRef>(null)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const hasUnsavedChangesRef = useRef(false)
+  const annotationsRef = useRef<Annotation[]>([])
 
   useEffect(() => {
     hasUnsavedChangesRef.current = hasUnsavedChanges
   }, [hasUnsavedChanges])
+
+  const handleAnnotationsChange = useCallback((annotations: Annotation[]) => {
+    annotationsRef.current = annotations
+  }, [])
 
   const {
     params,
@@ -93,9 +99,17 @@ export default function Lab() {
 
   useEffect(() => {
     return () => {
+      if (hasUnsavedChangesRef.current) {
+        const confirmLeave = window.confirm('画笔内容有未保存的更改，是否保存？\n\n点击「确定」保存并退出\n点击「取消」放弃更改并退出')
+        if (confirmLeave) {
+          if (experimentId) {
+            saveBrushAnnotations(experimentId, annotationsRef.current)
+          }
+        }
+      }
       resetAll()
     }
-  }, [resetAll])
+  }, [experimentId, resetAll])
 
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -110,23 +124,13 @@ export default function Lab() {
     }
   }, [])
 
-  useEffect(() => {
-    return () => {
-      if (hasUnsavedChangesRef.current) {
-        const confirmLeave = window.confirm('画笔内容有未保存的更改，是否保存？\n\n点击「确定」保存并退出\n点击「取消」放弃更改并退出')
-        if (confirmLeave) {
-          brushOverlayRef.current?.save()
-        } else {
-          brushOverlayRef.current?.discard()
-        }
-      }
-    }
-  }, [])
-
   const handleBrushModeToggle = () => {
     if (brushMode && hasUnsavedChanges) {
       const confirmClose = window.confirm('画笔内容有未保存的更改，是否保存？\n\n点击「确定」保存并关闭画笔模式\n点击「取消」放弃更改并关闭画笔模式')
       if (confirmClose) {
+        if (experimentId) {
+          saveBrushAnnotations(experimentId, annotationsRef.current)
+        }
         brushOverlayRef.current?.save()
       } else {
         brushOverlayRef.current?.discard()
@@ -196,6 +200,7 @@ export default function Lab() {
             experimentId={experimentId!}
             active={brushMode}
             onDirtyChange={setHasUnsavedChanges}
+            onAnnotationsChange={handleAnnotationsChange}
           />
           {!guideVisible && config?.experiment.guide && (
             <button

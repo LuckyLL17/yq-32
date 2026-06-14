@@ -6,10 +6,12 @@ interface BrushOverlayProps {
   experimentId: string
   active: boolean
   onDirtyChange?: (hasUnsavedChanges: boolean) => void
+  onAnnotationsChange?: (annotations: Annotation[]) => void
 }
 
 export interface BrushOverlayRef {
   getHasUnsavedChanges: () => boolean
+  getAnnotations: () => Annotation[]
   save: () => void
   discard: () => void
 }
@@ -20,20 +22,20 @@ const PEN_COLORS: { value: PenColor; label: string }[] = [
   { value: '#3b82f6', label: '蓝' },
 ]
 
-const STORAGE_PREFIX = 'brush_annotations_'
+export const BRUSH_STORAGE_PREFIX = 'brush_annotations_'
 
-function loadAnnotations(experimentId: string): Annotation[] {
+export function loadBrushAnnotations(experimentId: string): Annotation[] {
   try {
-    const stored = localStorage.getItem(STORAGE_PREFIX + experimentId)
+    const stored = localStorage.getItem(BRUSH_STORAGE_PREFIX + experimentId)
     return stored ? JSON.parse(stored) : []
   } catch {
     return []
   }
 }
 
-function saveAnnotations(experimentId: string, annotations: Annotation[]) {
+export function saveBrushAnnotations(experimentId: string, annotations: Annotation[]) {
   try {
-    localStorage.setItem(STORAGE_PREFIX + experimentId, JSON.stringify(annotations))
+    localStorage.setItem(BRUSH_STORAGE_PREFIX + experimentId, JSON.stringify(annotations))
   } catch {
     // ignore
   }
@@ -110,7 +112,7 @@ function redrawAll(ctx: CanvasRenderingContext2D, annotations: Annotation[], wid
   annotations.forEach((ann) => renderAnnotation(ctx, ann))
 }
 
-const BrushOverlay = forwardRef<BrushOverlayRef, BrushOverlayProps>(function BrushOverlay({ experimentId, active, onDirtyChange }, ref) {
+const BrushOverlay = forwardRef<BrushOverlayRef, BrushOverlayProps>(function BrushOverlay({ experimentId, active, onDirtyChange, onAnnotationsChange }, ref) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [tool, setTool] = useState<BrushTool>('pen')
@@ -129,22 +131,28 @@ const BrushOverlay = forwardRef<BrushOverlayRef, BrushOverlayProps>(function Bru
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [saveFlash, setSaveFlash] = useState(false)
   const onDirtyChangeRef = useRef(onDirtyChange)
+  const onAnnotationsChangeRef = useRef(onAnnotationsChange)
 
   useEffect(() => {
     onDirtyChangeRef.current = onDirtyChange
   }, [onDirtyChange])
 
+  useEffect(() => {
+    onAnnotationsChangeRef.current = onAnnotationsChange
+  }, [onAnnotationsChange])
+
   useImperativeHandle(ref, () => ({
     getHasUnsavedChanges: () => hasUnsavedChangesRef.current,
+    getAnnotations: () => annotationsRef.current,
     save: () => {
-      saveAnnotations(experimentId, annotationsRef.current)
+      saveBrushAnnotations(experimentId, annotationsRef.current)
       savedAnnotationsRef.current = [...annotationsRef.current]
       setHasUnsavedChanges(false)
       hasUnsavedChangesRef.current = false
       onDirtyChangeRef.current?.(false)
     },
     discard: () => {
-      const saved = loadAnnotations(experimentId)
+      const saved = loadBrushAnnotations(experimentId)
       setAnnotations(saved)
       savedAnnotationsRef.current = saved
       annotationsRef.current = saved
@@ -165,17 +173,19 @@ const BrushOverlay = forwardRef<BrushOverlayRef, BrushOverlayProps>(function Bru
 
   useEffect(() => {
     annotationsRef.current = annotations
+    onAnnotationsChangeRef.current?.(annotations)
   }, [annotations])
 
   useEffect(() => {
     if (experimentId) {
-      const loaded = loadAnnotations(experimentId)
+      const loaded = loadBrushAnnotations(experimentId)
       setAnnotations(loaded)
       savedAnnotationsRef.current = loaded
       annotationsRef.current = loaded
       hasUnsavedChangesRef.current = false
       setHasUnsavedChanges(false)
       onDirtyChangeRef.current?.(false)
+      onAnnotationsChangeRef.current?.(loaded)
     }
   }, [experimentId])
 
@@ -231,7 +241,7 @@ const BrushOverlay = forwardRef<BrushOverlayRef, BrushOverlayProps>(function Bru
   }, [])
 
   const handleSave = useCallback(() => {
-    saveAnnotations(experimentId, annotationsRef.current)
+    saveBrushAnnotations(experimentId, annotationsRef.current)
     savedAnnotationsRef.current = [...annotationsRef.current]
     hasUnsavedChangesRef.current = false
     setHasUnsavedChanges(false)
