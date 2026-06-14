@@ -55,6 +55,74 @@ export const experiments: ExperimentConfig[] = [
       { key: 'displacement', label: '初始位移', defaultValue: 1, min: -2, max: 2, step: 0.1, unit: 'm' },
     ],
     formula: 'x(t) = A \\cos(\\omega t + \\varphi)',
+    formulaDerivation: {
+      variables: [
+        { symbol: 'x', name: '位移', dimension: '[L]', unit: 'm', description: '物体相对于平衡位置的瞬时位移', relatedVariables: ['A', 't'] },
+        { symbol: 'A', name: '振幅', dimension: '[L]', unit: 'm', description: '最大位移，振动的强弱程度', relatedVariables: ['x', '\\omega'] },
+        { symbol: '\\omega', name: '角频率', dimension: '[T^{-1}]', unit: 'rad/s', description: '单位时间内的角度变化，\\omega = \\sqrt{k/m}', relatedVariables: ['k', 'm', 'T'] },
+        { symbol: 't', name: '时间', dimension: '[T]', unit: 's', description: '自变量，观测时刻', relatedVariables: ['x'] },
+        { symbol: '\\varphi', name: '初相位', dimension: '无量纲', unit: 'rad', description: 't=0时刻的相位，决定初始位置', relatedVariables: ['A', '\\omega'] },
+        { symbol: 'k', name: '弹性系数', dimension: '[MT^{-2}]', unit: 'N/m', description: '弹簧的劲度系数，力与形变量之比', relatedVariables: ['\\omega', 'm'] },
+        { symbol: 'm', name: '质量', dimension: '[M]', unit: 'kg', description: '振子的惯性质量', relatedVariables: ['\\omega', 'k'] },
+        { symbol: 'T', name: '周期', dimension: '[T]', unit: 's', description: '完成一次全振动所需时间', relatedVariables: ['\\omega', 'f'] },
+      ],
+      derivationSteps: [
+        {
+          id: 'spring-1',
+          formula: 'F = -kx',
+          explanation: '根据胡克定律，弹簧的恢复力与位移成正比，方向相反',
+          theorem: {
+            name: '胡克定律',
+            description: '弹性体在弹性限度内，应力与应变成正比。对于弹簧，恢复力 F 与形变量 x 成正比，比例系数 k 为弹性系数',
+            formula: 'F = -kx',
+          },
+        },
+        {
+          id: 'spring-2',
+          formula: 'm\\frac{d^2x}{dt^2} = -kx',
+          explanation: '将牛顿第二定律代入胡克定律，得到二阶微分方程',
+          theorem: {
+            name: '牛顿第二定律',
+            description: '物体的加速度与所受合外力成正比，与质量成反比，F = ma',
+            formula: 'F = m\\frac{d^2x}{dt^2}',
+          },
+        },
+        {
+          id: 'spring-3',
+          formula: '\\frac{d^2x}{dt^2} + \\omega^2 x = 0',
+          explanation: '令 \\omega^2 = k/m，整理方程得到简谐运动的标准微分形式',
+          theorem: {
+            name: '变量替换',
+            description: '引入新变量简化方程，此处定义角频率 \\omega = \\sqrt{k/m}',
+            formula: '\\omega = \\sqrt{\\frac{k}{m}}',
+          },
+        },
+        {
+          id: 'spring-4',
+          formula: 'x(t) = C_1 e^{i\\omega t} + C_2 e^{-i\\omega t}',
+          explanation: '假设解为指数形式，代入微分方程得到特征根解',
+          theorem: {
+            name: '常系数齐次线性微分方程解法',
+            description: '二阶常系数齐次线性微分方程 ay\'\' + by\' + cy = 0 的特征方程为 ar² + br + c = 0，根据根的情况求解',
+          },
+        },
+        {
+          id: 'spring-5',
+          formula: 'x(t) = A \\cos(\\omega t + \\varphi)',
+          explanation: '利用欧拉公式将复指数解转换为三角函数形式，得到简谐运动的一般表达式',
+          theorem: {
+            name: '欧拉公式',
+            description: 'e^{ix} = cosx + i·sinx，将复指数函数与三角函数联系起来',
+            formula: 'e^{ix} = \\cos x + i\\sin x',
+          },
+        },
+      ],
+      relatedFormulas: [
+        { name: '周期公式', formula: 'T = 2\\pi\\sqrt{\\frac{m}{k}}', description: '简谐运动的周期公式，与振幅无关（等时性）' },
+        { name: '频率公式', formula: 'f = \\frac{1}{T} = \\frac{\\omega}{2\\pi}', description: '单位时间内完成的全振动次数' },
+        { name: '能量公式', formula: 'E = \\frac{1}{2}kA^2 = \\frac{1}{2}mv^2 + \\frac{1}{2}kx^2', description: '简谐运动机械能守恒，动能与势能相互转换' },
+      ],
+    },
     templates: [
       { id: 'spring-classic-1', name: '无阻尼理想谐振', category: 'classic', params: { mass: 1, stiffness: 20, damping: 0, displacement: 1 } },
       { id: 'spring-classic-2', name: '轻质量高频振动', category: 'classic', params: { mass: 0.2, stiffness: 50, damping: 0.05, displacement: 0.5 } },
@@ -117,6 +185,73 @@ export const experiments: ExperimentConfig[] = [
       { key: 'gravity', label: '重力加速度', defaultValue: 9.8, min: 1, max: 20, step: 0.1, unit: 'm/s²' },
     ],
     formula: 'y = x\\tan\\theta - \\frac{gx^2}{2v_0^2\\cos^2\\theta}',
+    formulaDerivation: {
+      variables: [
+        { symbol: 'x', name: '水平位移', dimension: '[L]', unit: 'm', description: '物体在水平方向上的位置坐标', relatedVariables: ['v_0', '\\theta', 't'] },
+        { symbol: 'y', name: '竖直位移', dimension: '[L]', unit: 'm', description: '物体在竖直方向上的位置坐标', relatedVariables: ['x', 'g', 'v_0'] },
+        { symbol: 'v_0', name: '初速度', dimension: '[LT^{-1}]', unit: 'm/s', description: '物体抛出时的初始速度大小', relatedVariables: ['\\theta', 'x', 'y', 't'] },
+        { symbol: '\\theta', name: '发射角', dimension: '无量纲', unit: '°', description: '初速度方向与水平方向的夹角', relatedVariables: ['v_0', 'R', 'H'] },
+        { symbol: 'g', name: '重力加速度', dimension: '[LT^{-2}]', unit: 'm/s²', description: '地球表面重力加速度，约9.8m/s²', relatedVariables: ['y', 't', 'H'] },
+        { symbol: 't', name: '时间', dimension: '[T]', unit: 's', description: '自抛出时刻算起的时间', relatedVariables: ['x', 'y'] },
+        { symbol: 'R', name: '射程', dimension: '[L]', unit: 'm', description: '物体落回同一高度时的水平位移', relatedVariables: ['v_0', '\\theta', 'g'] },
+        { symbol: 'H', name: '射高', dimension: '[L]', unit: 'm', description: '物体达到的最大高度', relatedVariables: ['v_0', '\\theta', 'g'] },
+      ],
+      derivationSteps: [
+        {
+          id: 'projectile-1',
+          formula: 'x = v_{0x} t = v_0 \\cos\\theta \\cdot t',
+          explanation: '水平方向不受力，做匀速直线运动，位移等于水平分速度乘以时间',
+          theorem: {
+            name: '匀速直线运动公式',
+            description: '物体不受力或合力为零时，保持匀速直线运动或静止状态，位移 s = v·t',
+            formula: 's = vt',
+          },
+        },
+        {
+          id: 'projectile-2',
+          formula: 'y = v_{0y} t - \\frac{1}{2}gt^2 = v_0 \\sin\\theta \\cdot t - \\frac{1}{2}gt^2',
+          explanation: '竖直方向受重力作用，做匀变速直线运动（竖直上抛）',
+          theorem: {
+            name: '匀变速直线运动公式',
+            description: '物体受恒力作用时做匀变速运动，位移与时间的关系为 s = v₀t + ½at²',
+            formula: 's = v_0 t + \\frac{1}{2} a t^2',
+          },
+        },
+        {
+          id: 'projectile-3',
+          formula: 't = \\frac{x}{v_0 \\cos\\theta}',
+          explanation: '从水平运动方程解出时间 t，为消元做准备',
+          theorem: {
+            name: '代数消元法',
+            description: '通过解方程将一个变量用其他变量表示，再代入另一方程消去该变量',
+          },
+        },
+        {
+          id: 'projectile-4',
+          formula: 'y = v_0 \\sin\\theta \\cdot \\frac{x}{v_0 \\cos\\theta} - \\frac{1}{2}g\\left(\\frac{x}{v_0 \\cos\\theta}\\right)^2',
+          explanation: '将 t 的表达式代入竖直运动方程，消去时间参数 t',
+          theorem: {
+            name: '代入消元',
+            description: '将已解得的变量表达式代入原方程，实现变量消去',
+          },
+        },
+        {
+          id: 'projectile-5',
+          formula: 'y = x\\tan\\theta - \\frac{gx^2}{2v_0^2\\cos^2\\theta}',
+          explanation: '利用 tanθ = sinθ/cosθ 化简，得到轨迹的抛物线方程',
+          theorem: {
+            name: '三角函数恒等式',
+            description: '正切函数定义为正弦与余弦的比值：tanθ = sinθ / cosθ',
+            formula: '\\tan\\theta = \\frac{\\sin\\theta}{\\cos\\theta}',
+          },
+        },
+      ],
+      relatedFormulas: [
+        { name: '射程公式', formula: 'R = \\frac{v_0^2 \\sin2\\theta}{g}', description: '当 θ=45° 时射程最大' },
+        { name: '射高公式', formula: 'H = \\frac{v_0^2 \\sin^2\\theta}{2g}', description: '物体上升的最大高度' },
+        { name: '飞行时间', formula: 'T = \\frac{2v_0 \\sin\\theta}{g}', description: '从抛出到落回原高度的总时间' },
+      ],
+    },
     templates: [
       { id: 'projectile-classic-1', name: '月球重力射击', category: 'classic', params: { velocity: 20, angle: 45, gravity: 1.62 } },
       { id: 'projectile-classic-2', name: '45度最远射程', category: 'classic', params: { velocity: 30, angle: 45, gravity: 9.8 } },
@@ -180,6 +315,75 @@ export const experiments: ExperimentConfig[] = [
       { key: 'frequency', label: '频率', defaultValue: 2, min: 1, max: 5, step: 0.1, unit: 'Hz' },
     ],
     formula: 'I = 4I_0 \\cos^2\\left(\\frac{\\pi d \\sin\\theta}{\\lambda}\\right)',
+    formulaDerivation: {
+      variables: [
+        { symbol: 'I', name: '光强', dimension: '[MT^{-3}]', unit: 'W/m²', description: '单位面积的光功率，与振幅平方成正比', relatedVariables: ['I_0', 'd', '\\theta', '\\lambda'] },
+        { symbol: 'I_0', name: '单缝光强', dimension: '[MT^{-3}]', unit: 'W/m²', description: '单个缝在屏幕上产生的光强', relatedVariables: ['I'] },
+        { symbol: 'd', name: '缝间距', dimension: '[L]', unit: 'm', description: '双缝中心之间的距离', relatedVariables: ['\\lambda', '\\theta', '\\Delta x'] },
+        { symbol: '\\theta', name: '衍射角', dimension: '无量纲', unit: 'rad', description: '从双缝连线中点到屏幕某点与法线的夹角', relatedVariables: ['d', '\\lambda'] },
+        { symbol: '\\lambda', name: '波长', dimension: '[L]', unit: 'm', description: '波在一个周期内传播的距离', relatedVariables: ['d', '\\theta', 'f'] },
+        { symbol: 'f', name: '频率', dimension: '[T^{-1}]', unit: 'Hz', description: '单位时间内振动的次数', relatedVariables: ['\\lambda', 'v'] },
+        { symbol: '\\Delta x', name: '条纹间距', dimension: '[L]', unit: 'm', description: '相邻两明纹或暗纹的间距', relatedVariables: ['\\lambda', 'd', 'L'] },
+        { symbol: 'L', name: '缝屏距离', dimension: '[L]', unit: 'm', description: '双缝到观察屏幕的距离', relatedVariables: ['\\Delta x', '\\lambda', 'd'] },
+      ],
+      derivationSteps: [
+        {
+          id: 'wave-1',
+          formula: 'y_1 = A_0 \\sin(\\omega t - kr_1), \\quad y_2 = A_0 \\sin(\\omega t - kr_2)',
+          explanation: '两个同频率、同振幅的简谐波从两缝发出，波数 k = 2π/λ',
+          theorem: {
+            name: '简谐波表达式',
+            description: '沿 x 方向传播的简谐波位移方程 y = A·sin(ωt - kx + φ)，其中 ω 为角频率，k 为波数',
+            formula: 'y = A\\sin(\\omega t - kx + \\varphi)',
+          },
+        },
+        {
+          id: 'wave-2',
+          formula: '\\Delta\\phi = k(r_2 - r_1) = \\frac{2\\pi}{\\lambda} \\cdot d\\sin\\theta',
+          explanation: '两列波到达屏幕同一点的相位差由光程差决定，远场近似下光程差 Δr = d·sinθ',
+          theorem: {
+            name: '远场近似（夫琅禾费近似）',
+            description: '当缝屏距离 L 远大于缝间距 d 时，两束光近似平行，光程差可近似为 d·sinθ',
+            formula: '\\Delta r = d\\sin\\theta',
+          },
+        },
+        {
+          id: 'wave-3',
+          formula: 'y = y_1 + y_2 = 2A_0 \\cos\\left(\\frac{\\Delta\\phi}{2}\\right) \\sin\\left(\\omega t - \\frac{k(r_1+r_2)}{2}\\right)',
+          explanation: '利用三角恒等式对两列波叠加，合成波的振幅为 2A₀·cos(Δφ/2)',
+          theorem: {
+            name: '波的叠加原理',
+            description: '几列波在同一介质中传播时，在相遇区域任一点的振动为各列波单独引起的振动的矢量和',
+            formula: 'y = y_1 + y_2',
+          },
+        },
+        {
+          id: 'wave-4',
+          formula: 'A = 2A_0 \\left|\\cos\\left(\\frac{\\pi d\\sin\\theta}{\\lambda}\\right)\\right|',
+          explanation: '合成振幅取决于相位差，振幅的绝对值决定光强分布',
+          theorem: {
+            name: '和差化积公式',
+            description: 'sinα + sinβ = 2sin((α+β)/2)·cos((α-β)/2)，将两个正弦函数之和转化为乘积形式',
+            formula: '\\sin\\alpha + \\sin\\beta = 2\\sin\\frac{\\alpha+\\beta}{2}\\cos\\frac{\\alpha-\\beta}{2}',
+          },
+        },
+        {
+          id: 'wave-5',
+          formula: 'I = A^2 = 4A_0^2 \\cos^2\\left(\\frac{\\pi d\\sin\\theta}{\\lambda}\\right) = 4I_0 \\cos^2\\left(\\frac{\\pi d\\sin\\theta}{\\lambda}\\right)',
+          explanation: '光强与振幅平方成正比，代入 Δφ 的表达式得到最终光强分布公式',
+          theorem: {
+            name: '光强与振幅的关系',
+            description: '电磁波的能流密度（光强）与电场振幅的平方成正比，I ∝ A²',
+            formula: 'I \\propto A^2',
+          },
+        },
+      ],
+      relatedFormulas: [
+        { name: '明纹条件', formula: 'd\\sin\\theta = k\\lambda, \\quad k=0,\\pm1,\\pm2,...', description: '光程差为波长整数倍时，干涉加强出现明纹' },
+        { name: '暗纹条件', formula: 'd\\sin\\theta = (k+\\frac{1}{2})\\lambda', description: '光程差为半波长奇数倍时，干涉相消出现暗纹' },
+        { name: '条纹间距', formula: '\\Delta x = \\frac{\\lambda L}{d}', description: '相邻明纹或暗纹的间距，与波长成正比，与缝间距成反比' },
+      ],
+    },
     templates: [
       { id: 'wave-classic-1', name: '标准双缝干涉', category: 'classic', params: { wavelength: 50, slitDistance: 150, amplitude: 40, frequency: 2 } },
       { id: 'wave-classic-2', name: '红光长波干涉', category: 'classic', params: { wavelength: 80, slitDistance: 200, amplitude: 50, frequency: 1.5 } },
@@ -242,6 +446,73 @@ export const experiments: ExperimentConfig[] = [
       { key: 'c', label: 'c', defaultValue: 0, min: -10, max: 10, step: 0.1, unit: '' },
     ],
     formula: 'y = ax^2 + bx + c',
+    formulaDerivation: {
+      variables: [
+        { symbol: 'x', name: '自变量', dimension: '依定义', unit: '依定义', description: '函数的输入值，通常表示横坐标', relatedVariables: ['y', 'a', 'b', 'c'] },
+        { symbol: 'y', name: '函数值', dimension: '依定义', unit: '依定义', description: '函数的输出值，通常表示纵坐标', relatedVariables: ['x', 'a', 'b', 'c'] },
+        { symbol: 'a', name: '二次项系数', dimension: '依定义', unit: '依定义', description: '决定抛物线开口方向和宽窄：a>0开口向上，a<0开口向下', relatedVariables: ['y', '\\Delta'] },
+        { symbol: 'b', name: '一次项系数', dimension: '依定义', unit: '依定义', description: '决定对称轴位置，与 a 共同决定顶点横坐标', relatedVariables: ['a', 'x_0'] },
+        { symbol: 'c', name: '常数项', dimension: '依定义', unit: '依定义', description: '抛物线与 y 轴的交点纵坐标（y 轴截距）', relatedVariables: ['y'] },
+        { symbol: 'x_0', name: '对称轴横坐标', dimension: '依定义', unit: '依定义', description: '抛物线对称轴的位置，x₀ = -b/(2a)', relatedVariables: ['a', 'b'] },
+        { symbol: 'y_0', name: '顶点纵坐标', dimension: '依定义', unit: '依定义', description: '抛物线顶点的纵坐标，y₀ = (4ac-b²)/(4a)', relatedVariables: ['a', 'b', 'c'] },
+        { symbol: '\\Delta', name: '判别式', dimension: '依定义', unit: '依定义', description: 'Δ = b² - 4ac，决定抛物线与 x 轴的交点个数', relatedVariables: ['a', 'b', 'c'] },
+      ],
+      derivationSteps: [
+        {
+          id: 'function-1',
+          formula: 'y = ax^2 + bx + c',
+          explanation: '二次函数的一般形式，由二次项、一次项和常数项组成',
+          theorem: {
+            name: '多项式定义',
+            description: '形如 aₙxⁿ + ... + a₁x + a₀ 的表达式称为 n 次多项式，二次多项式即二次函数',
+          },
+        },
+        {
+          id: 'function-2',
+          formula: 'y = a\\left(x^2 + \\frac{b}{a}x\\right) + c',
+          explanation: '从二次项和一次项中提取系数 a，为配方法做准备',
+          theorem: {
+            name: '提取公因式',
+            description: '将多项式各项的公共因子提取出来，ab + ac = a(b + c)',
+            formula: 'ab + ac = a(b + c)',
+          },
+        },
+        {
+          id: 'function-3',
+          formula: 'y = a\\left[x^2 + \\frac{b}{a}x + \\left(\\frac{b}{2a}\\right)^2 - \\left(\\frac{b}{2a}\\right)^2\\right] + c',
+          explanation: '在括号内加上并减去 (b/2a)²，构造完全平方项',
+          theorem: {
+            name: '恒等变形（加减同一项）',
+            description: '在表达式中先加后减同一个数，表达式的值不变',
+          },
+        },
+        {
+          id: 'function-4',
+          formula: 'y = a\\left(x + \\frac{b}{2a}\\right)^2 - \\frac{b^2}{4a} + c = a\\left(x + \\frac{b}{2a}\\right)^2 + \\frac{4ac - b^2}{4a}',
+          explanation: '前三项构成完全平方，整理得到顶点式',
+          theorem: {
+            name: '完全平方公式',
+            description: '(x + y)² = x² + 2xy + y²，反向用于因式分解',
+            formula: '(x + y)^2 = x^2 + 2xy + y^2',
+          },
+        },
+        {
+          id: 'function-5',
+          formula: 'y = a(x - x_0)^2 + y_0, \\quad x_0 = -\\frac{b}{2a}, \\quad y_0 = \\frac{4ac - b^2}{4a}',
+          explanation: '顶点式标准形式，直接给出顶点坐标 (x₀, y₀) 和对称轴 x = x₀',
+          theorem: {
+            name: '二次函数顶点式',
+            description: 'y = a(x - h)² + k 的顶点坐标为 (h, k)，对称轴为 x = h',
+            formula: 'y = a(x - h)^2 + k',
+          },
+        },
+      ],
+      relatedFormulas: [
+        { name: '顶点坐标公式', formula: '\\left(-\\frac{b}{2a}, \\frac{4ac-b^2}{4a}\\right)', description: '抛物线的最高点（a<0）或最低点（a>0）' },
+        { name: '对称轴方程', formula: 'x = -\\frac{b}{2a}', description: '抛物线关于此直线对称' },
+        { name: '求根公式', formula: 'x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}', description: '当 Δ ≥ 0 时，抛物线与 x 轴交点的横坐标' },
+      ],
+    },
     templates: [
       { id: 'function-classic-1', name: '标准开口向上', category: 'classic', params: { a: 1, b: 0, c: 0 } },
       { id: 'function-classic-2', name: '顶点平移抛物线', category: 'classic', params: { a: 0.5, b: -2, c: 1 } },
@@ -305,6 +576,71 @@ export const experiments: ExperimentConfig[] = [
       { key: 'rotationY', label: '旋转角度', defaultValue: 0, min: 0, max: 360, step: 1, unit: '°' },
     ],
     formula: '\\text{键角} = \\theta, \\quad \\text{键长} = d',
+    formulaDerivation: {
+      variables: [
+        { symbol: '\\theta', name: '键角', dimension: '无量纲', unit: '°', description: '同一原子上两个共价键之间的夹角，决定分子空间构型', relatedVariables: ['d', 'n'] },
+        { symbol: 'd', name: '键长', dimension: '[L]', unit: 'pm', description: '成键两原子核之间的平衡距离', relatedVariables: ['\\theta', 'E_b'] },
+        { symbol: 'n', name: '价层电子对数', dimension: '无量纲', unit: '对', description: '中心原子的 σ 键电子对与孤电子对之和', relatedVariables: ['\\theta'] },
+        { symbol: 'E_b', name: '键能', dimension: '[ML²T^{-2}]', unit: 'kJ/mol', description: '断裂1mol化学键所需的能量，键长越短键能越大', relatedVariables: ['d'] },
+        { symbol: 'r_A', name: '原子A半径', dimension: '[L]', unit: 'pm', description: '参与成键的原子A的共价半径', relatedVariables: ['d', 'r_B'] },
+        { symbol: 'r_B', name: '原子B半径', dimension: '[L]', unit: 'pm', description: '参与成键的原子B的共价半径', relatedVariables: ['d', 'r_A'] },
+        { symbol: '\\mu', name: '偶极矩', dimension: '[LTI]', unit: 'D', description: '分子极性的量度，μ = q·d，键角影响分子总偶极矩', relatedVariables: ['\\theta'] },
+        { symbol: 'Z^*', name: '有效核电荷', dimension: '无量纲', unit: 'e', description: '价电子实际感受到的核电荷，影响键长和键角', relatedVariables: ['d', '\\theta'] },
+      ],
+      derivationSteps: [
+        {
+          id: 'molecule-1',
+          formula: 'd = r_A + r_B',
+          explanation: '键长近似等于成键两原子的共价半径之和（同核双原子分子 d = 2r）',
+          theorem: {
+            name: '共价半径加和规则',
+            description: '两个原子形成共价单键时，核间距等于两原子共价半径之和',
+            formula: 'd = r_A + r_B',
+          },
+        },
+        {
+          id: 'molecule-2',
+          formula: 'n = N_{\\sigma} + N_{lone}',
+          explanation: '价层电子对数 = σ键数 + 孤电子对数，由VSEPR理论的基本假设',
+          theorem: {
+            name: '价层电子对互斥理论 (VSEPR)',
+            description: '分子的空间构型由中心原子价层电子对之间的排斥作用决定，电子对间尽可能远离以减小排斥',
+          },
+        },
+        {
+          id: 'molecule-3',
+          formula: '\\theta_{\\text{正四面体}} = \\arccos(-1/3) \\approx 109.5°',
+          explanation: '当 n=4 且无不孤电子对时（如CH₄），四对电子采取正四面体构型，键角为109.5°',
+          theorem: {
+            name: '正四面体几何',
+            description: '四条等长线段从中心指向正四面体四个顶点时，任意两条的夹角为 arccos(-1/3)',
+          },
+        },
+        {
+          id: 'molecule-4',
+          formula: '\\theta_{H_2O} \\approx 104.5° < 109.5°',
+          explanation: '水分子有2对孤电子对，孤对-孤对排斥 > 孤对-键对排斥 > 键对-键对排斥，导致键角压缩',
+          theorem: {
+            name: '电子对排斥强度规则',
+            description: '不同类型电子对之间排斥强度：孤对-孤对 > 孤对-键对 > 键对-键对，排斥越大夹角越大',
+          },
+        },
+        {
+          id: 'molecule-5',
+          formula: '\\vec{\\mu}_{\\text{总}} = \\sum_i \\vec{\\mu}_i',
+          explanation: '分子总偶极矩为各键偶极矩的矢量和，键角决定矢量叠加的结果，判断分子极性',
+          theorem: {
+            name: '偶极矩矢量叠加原理',
+            description: '多原子分子的总偶极矩是各键偶极矩的矢量和，对称结构矢量和为零则为非极性分子',
+          },
+        },
+      ],
+      relatedFormulas: [
+        { name: '杂化轨道键角', formula: '\\cos\\theta = -\\frac{\\alpha}{1-\\alpha}', description: 's-p杂化中，α为s轨道成分，θ为杂化轨道间夹角' },
+        { name: '键级公式', formula: '\\text{键级} = \\frac{\\text{成键电子数} - \\text{反键电子数}}{2}', description: '键级越大，键长越短，键能越大' },
+        { name: '库仑定律', formula: 'F = k\\frac{q_1 q_2}{r^2}', description: '带电粒子间相互作用力，影响键长和分子稳定性' },
+      ],
+    },
     templates: [
       { id: 'molecule-classic-1', name: '标准水分子', category: 'classic', params: { moleculeType: 0, bondLength: 80, bondAngle: 104.5, rotationY: 0 } },
       { id: 'molecule-classic-2', name: '甲烷正四面体', category: 'classic', params: { moleculeType: 2, bondLength: 90, bondAngle: 109.5, rotationY: 45 } },
@@ -368,6 +704,76 @@ export const experiments: ExperimentConfig[] = [
       { key: 'activationEnergy', label: '活化能', defaultValue: 50, min: 10, max: 100, step: 1, unit: 'kJ/mol' },
     ],
     formula: 'v = k [A]^m [B]^n, \\quad k = A e^{-\\frac{E_a}{RT}}',
+    formulaDerivation: {
+      variables: [
+        { symbol: 'v', name: '反应速率', dimension: '[ML^{-3}T^{-1}]', unit: 'mol/(L·s)', description: '单位时间内反应物浓度减少或产物浓度增加的量', relatedVariables: ['k', '[A]', '[B]', 'm', 'n'] },
+        { symbol: 'k', name: '速率常数', dimension: '依反应级数', unit: '依级数', description: '特定温度下反应物均为单位浓度时的反应速率', relatedVariables: ['A', 'E_a', 'R', 'T'] },
+        { symbol: '[A]', name: '反应物A浓度', dimension: '[ML^{-3}]', unit: 'mol/L', description: '单位体积内反应物A的物质的量', relatedVariables: ['v', 'm'] },
+        { symbol: '[B]', name: '反应物B浓度', dimension: '[ML^{-3}]', unit: 'mol/L', description: '单位体积内反应物B的物质的量', relatedVariables: ['v', 'n'] },
+        { symbol: 'm', name: '对A的反应级数', dimension: '无量纲', unit: '', description: '反应速率对[A]的敏感程度，v∝[A]^m，由实验确定', relatedVariables: ['v', '[A]'] },
+        { symbol: 'n', name: '对B的反应级数', dimension: '无量纲', unit: '', description: '反应速率对[B]的敏感程度，v∝[B]^n，由实验确定', relatedVariables: ['v', '[B]'] },
+        { symbol: 'A', name: '指前因子', dimension: '同k', unit: '同k', description: '与碰撞频率和方位因子有关的常数，与温度关系很小', relatedVariables: ['k', 'E_a'] },
+        { symbol: 'E_a', name: '活化能', dimension: '[ML²T^{-2}]', unit: 'kJ/mol', description: '反应发生所需的最低能量阈值，决定反应难易程度', relatedVariables: ['k', 'T', 'R'] },
+        { symbol: 'R', name: '气体常数', dimension: '[ML²T^{-2}K^{-1}mol^{-1}]', unit: 'J/(mol·K)', description: 'R = 8.314 J/(mol·K)，理想气体状态方程中的普适常数', relatedVariables: ['E_a', 'T'] },
+        { symbol: 'T', name: '热力学温度', dimension: '[Θ]', unit: 'K', description: '绝对温度，T(K) = t(°C) + 273.15', relatedVariables: ['k', 'E_a', 'R'] },
+      ],
+      derivationSteps: [
+        {
+          id: 'reaction-1',
+          formula: 'v = -\\frac{d[A]}{dt} = -\\frac{d[B]}{dt} = \\frac{d[C]}{dt}',
+          explanation: '反应速率定义为反应物浓度减少速率（取正值）或产物浓度增加速率',
+          theorem: {
+            name: '反应速率定义',
+            description: '化学反应速率用单位时间内反应物浓度的减少或生成物浓度的增加来表示，均取正值',
+            formula: 'v = \\pm\\frac{d[X]}{dt}',
+          },
+        },
+        {
+          id: 'reaction-2',
+          formula: 'v \\propto [A]^m [B]^n \\implies v = k [A]^m [B]^n',
+          explanation: '根据质量作用定律的推广形式，反应速率与反应物浓度的幂次方乘积成正比',
+          theorem: {
+            name: '质量作用定律（速率方程）',
+            description: '基元反应的速率与反应物浓度以其化学计量数为指数的幂的乘积成正比，总反应级数由实验确定',
+            formula: 'v = k\\prod [R_i]^{n_i}',
+          },
+        },
+        {
+          id: 'reaction-3',
+          formula: 'Z_{AB} = Z_0 [A][B]',
+          explanation: '单位时间单位体积内A-B分子的碰撞频率与[A]和[B]成正比，这是碰撞理论的出发点',
+          theorem: {
+            name: '碰撞理论基本假设',
+            description: '分子必须发生碰撞才能反应，反应速率正比于有效碰撞频率',
+          },
+        },
+        {
+          id: 'reaction-4',
+          formula: 'f_{\\text{有效}} = e^{-\\frac{E_a}{RT}}',
+          explanation: '根据麦克斯韦-玻尔兹曼分布，能量≥Eₐ的分子占总分子数的比例服从玻尔兹曼因子',
+          theorem: {
+            name: '玻尔兹曼分布律',
+            description: '热平衡时能量为E的分子数正比于e^(-E/kT)，能量超过活化能的分子分数为e^(-Ea/RT)',
+            formula: 'f \\propto e^{-\\frac{E}{kT}}',
+          },
+        },
+        {
+          id: 'reaction-5',
+          formula: 'k = A \\cdot P \\cdot e^{-\\frac{E_a}{RT}} \\approx A e^{-\\frac{E_a}{RT}}',
+          explanation: '将碰撞频率、方位因子P和能量因子结合，得到阿伦尼乌斯公式，A包含碰撞频率和方位因子',
+          theorem: {
+            name: '阿伦尼乌斯公式',
+            description: '瑞典化学家阿伦尼乌斯1889年提出的经验公式，描述速率常数与温度的指数关系',
+            formula: 'k = A e^{-\\frac{E_a}{RT}}',
+          },
+        },
+      ],
+      relatedFormulas: [
+        { name: '积分速率方程（一级）', formula: '\\ln[A] = \\ln[A]_0 - kt', description: '一级反应浓度与时间的线性关系，半衰期 t_{½} = ln2/k' },
+        { name: '范特霍夫规则', formula: '\\frac{k_{T+10}}{k_T} \\approx 2 \\sim 4', description: '温度每升高10K，反应速率约增加2~4倍（经验规则）' },
+        { name: '阿伦尼乌斯积分式', formula: '\\ln\\frac{k_2}{k_1} = \\frac{E_a}{R}\\left(\\frac{1}{T_1} - \\frac{1}{T_2}\\right)', description: '已知两个温度下的k值求活化能，或已知Ea求另一温度的k' },
+      ],
+    },
     templates: [
       { id: 'reaction-classic-1', name: '室温标准反应', category: 'classic', params: { concentrationA: 20, concentrationB: 20, temperature: 300, activationEnergy: 50 } },
       { id: 'reaction-classic-2', name: '等浓度基准反应', category: 'classic', params: { concentrationA: 25, concentrationB: 25, temperature: 298, activationEnergy: 40 } },

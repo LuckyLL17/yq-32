@@ -217,7 +217,7 @@ export default function Lab() {
           </div>
 
           <div data-guide-area="formula">
-            <FormulaDisplay formula={config.formula} formulaWithValues={formulaWithValues} params={params} />
+            <FormulaDisplay formula={config.formula} formulaWithValues={formulaWithValues} params={params} derivation={config.formulaDerivation} />
           </div>
 
           <div className="h-56" data-guide-area="chart">

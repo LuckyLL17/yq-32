@@ -48,6 +48,7 @@ export interface ExperimentConfig {
   params: ParamConfig[]
   formula: string
   templates: Template[]
+  formulaDerivation: FormulaDerivation
 }
 
 export interface DragEvent {
@@ -65,6 +66,36 @@ export interface EngineData {
   time: number
   primary: number
   secondary: number
+}
+
+export interface VariableDefinition {
+  symbol: string
+  name: string
+  dimension: string
+  unit: string
+  description: string
+  relatedVariables?: string[]
+}
+
+export interface DerivationStep {
+  id: string
+  formula: string
+  explanation: string
+  theorem: {
+    name: string
+    description: string
+    formula?: string
+  }
+}
+
+export interface FormulaDerivation {
+  variables: VariableDefinition[]
+  derivationSteps: DerivationStep[]
+  relatedFormulas?: {
+    name: string
+    formula: string
+    description: string
+  }[]
 }
 
 export interface ExperimentEngine {
