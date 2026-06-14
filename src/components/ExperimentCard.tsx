@@ -1,5 +1,5 @@
 import type { ExperimentConfig } from '@/data/types'
-import { Zap, ArrowUpRight, Waves, TrendingUp, Atom } from 'lucide-react'
+import { Zap, ArrowUpRight, Waves, TrendingUp, Atom, BookOpen, Play } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -37,18 +37,18 @@ const difficultyLabel: Record<string, string> = {
 interface ExperimentCardProps {
   config: ExperimentConfig
   onClick?: () => void
+  onQuiz?: () => void
   featured?: boolean
 }
 
-export default function ExperimentCard({ config, onClick, featured }: ExperimentCardProps) {
+export default function ExperimentCard({ config, onClick, onQuiz, featured }: ExperimentCardProps) {
   const Icon = iconMap[config.experiment.icon] || Atom
   const { category, difficulty } = config.experiment
 
   return (
     <div
-      onClick={onClick}
       className={cn(
-        'glass-panel rounded-xl cursor-pointer overflow-hidden',
+        'glass-panel rounded-xl overflow-hidden',
         'transition-all duration-500 ease-out',
         'hover:-translate-y-2 hover:shadow-2xl',
         'group perspective-1000',
@@ -57,8 +57,9 @@ export default function ExperimentCard({ config, onClick, featured }: Experiment
       style={{ borderRadius: '12px' }}
     >
       <div
+        onClick={onClick}
         className={cn(
-          'relative h-40 bg-gradient-to-br',
+          'relative h-40 bg-gradient-to-br cursor-pointer',
           categoryGradient[category],
           'flex items-center justify-center overflow-hidden'
         )}
@@ -88,7 +89,10 @@ export default function ExperimentCard({ config, onClick, featured }: Experiment
       </div>
 
       <div className="p-5 space-y-3">
-        <h3 className="font-orbitron text-lg font-bold text-white group-hover:text-cyan-300 transition-colors">
+        <h3
+          onClick={onClick}
+          className="font-orbitron text-lg font-bold text-white group-hover:text-cyan-300 transition-colors cursor-pointer"
+        >
           {config.experiment.title}
         </h3>
         <p className="text-sm text-slate-400 leading-relaxed line-clamp-2">
@@ -103,6 +107,26 @@ export default function ExperimentCard({ config, onClick, featured }: Experiment
               {tag}
             </span>
           ))}
+        </div>
+
+        <div className="flex gap-2 pt-2">
+          <button
+            onClick={onClick}
+            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 hover:bg-neon-cyan/20 hover:border-neon-cyan/50 transition-all duration-300"
+          >
+            <Play className="w-4 h-4" />
+            做实验
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onQuiz?.()
+            }}
+            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-neon-purple/10 text-neon-purple border border-neon-purple/30 hover:bg-neon-purple/20 hover:border-neon-purple/50 transition-all duration-300"
+          >
+            <BookOpen className="w-4 h-4" />
+            来做题
+          </button>
         </div>
       </div>
 

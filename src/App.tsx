@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Home from "@/pages/Home";
 import Lab from "@/pages/Lab";
 import Library from "@/pages/Library";
+import Quiz from "@/pages/Quiz";
 import Sandbox from "@/pages/Sandbox";
 
 export default function App() {
@@ -12,6 +13,7 @@ export default function App() {
         <Route path="/library" element={<Library />} />
         <Route path="/sandbox" element={<Sandbox />} />
         <Route path="/lab/:experimentId" element={<Lab />} />
+        <Route path="/quiz/:experimentId" element={<Quiz />} />
       </Routes>
     </Router>
   );

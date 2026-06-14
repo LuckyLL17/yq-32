@@ -169,6 +169,7 @@ export default function Home() {
                   <ExperimentCard
                     config={config}
                     onClick={() => navigate(`/lab/${config.experiment.id}`)}
+                    onQuiz={() => navigate(`/quiz/${config.experiment.id}`)}
                     featured
                   />
                 </div>

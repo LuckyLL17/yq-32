@@ -111,6 +111,7 @@ export default function Library() {
                   key={config.experiment.id}
                   config={config}
                   onClick={() => navigate(`/lab/${config.experiment.id}`)}
+                  onQuiz={() => navigate(`/quiz/${config.experiment.id}`)}
                 />
               ))}
             </div>
